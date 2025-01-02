@@ -6,7 +6,11 @@ Scalable version of Home Assistant's [Picture Elements](https://www.home-assista
 It scales the whole content, including inner elements, to fit both width and height into the parent container.
 
 This library also contains some custom elements like door/window element to better visualize house state.
+## Installing
 
+This card is available in [HACS](https://hacs.xyz/) (Home Assistant Community Store).
+
+Just search for Scalable Picture Elements in the plugins tab.
 
 ## Local development and debugging
 ### This requires to run HASS local dev environment
