@@ -9,8 +9,9 @@ interface PictureElementsScalableConfig extends LovelaceCardConfig {
     elements: PictureElement[];
     image: string;
     style: any
-    imageWidth: number;
-    imageHeight: number;
+    image_width: number;
+    image_height: number;
+    max_scale?: number;
 }
 interface PictureElement {
     type: string;
@@ -63,8 +64,8 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
         }
         const clientRect = this.getBoundingClientRect();
         //console.log("RenderY", clientRect);
-        const contentHeight = this.config.imageHeight;
-        const contentWidth = this.config.imageWidth;
+        const contentHeight = this.config.image_height;
+        const contentWidth = this.config.image_width;
 
         const fitIntoHeight = clientRect.height;
         const fitIntoWidth = clientRect.width;
@@ -88,6 +89,10 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
         }
         //console.log('X rect.width, visible.width ; rect.height, visible.height:', clientRect.width, visibleWidth, clientRect.height, visibleHeight);
         const scale = this.getScale(fitIntoHeight, fitIntoWidth, contentWidth, contentHeight)
+        if (this.config.max_scale) {
+            scale.scaleX = Math.min(scale.scaleX, this.config.max_scale);
+            scale.scaleY = Math.min(scale.scaleY, this.config.max_scale);
+        }
         this.style.setProperty("position", "relative");
 
         this.card = this.card || this.createCardElement(this.config);
