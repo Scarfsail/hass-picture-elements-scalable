@@ -1,14 +1,10 @@
-import { LitElement, TemplateResult, css, html, nothing } from "lit"
-import { customElement, property, state } from "lit/decorators.js";
-import type { HomeAssistant } from "../../../hass-frontend/src/types";
-import "../../components/last-change-text";
-
+import { state } from "lit/decorators.js";
 import { AlarmoSensorAndArea, getAlarmoSensorAndArea, getAlarmoSensorState } from "../../utils/alarmo";
-import { ElementBase, ElementBaseConfig } from "./element-base";
+import { ElementEntityBase, ElementEntityBaseConfig } from "./element-entity-base";
 
 
 
-export abstract class ElementBaseArmable<TConfig extends ElementBaseConfig = ElementBaseConfig> extends ElementBase<TConfig> {
+export abstract class ElementEntityArmableBase<TConfig extends ElementEntityBaseConfig = ElementEntityBaseConfig> extends ElementEntityBase<TConfig> {
     @state() private _alarmoArea?: AlarmoSensorAndArea;
 
     protected updated(changedProperties: Map<string | number | symbol, unknown>) {

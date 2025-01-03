@@ -2,19 +2,19 @@ import { html, nothing } from "lit"
 import { customElement } from "lit/decorators.js";
 import "../components/last-change-text";
 
-import { ElementBaseConfig, ElementBaseArmable } from "./base/";
+import { ElementEntityBaseConfig, ElementEntityArmableBase } from "./base/";
 import type { HassEntity } from "home-assistant-js-websocket";
 
-interface DoorWindowElementConfig extends ElementBaseConfig {
+interface DoorWindowElementConfig extends ElementEntityBaseConfig {
     width: number;
     height: number;
 }
 
 
 @customElement("door-window-element")
-export class DoorWindowElement extends ElementBaseArmable<DoorWindowElementConfig> {
+export class DoorWindowElement extends ElementEntityArmableBase<DoorWindowElementConfig> {
 
-    protected renderContent(entity: HassEntity) {
+    protected renderEntityContent(entity: HassEntity) {
         if (!this._config || !this.hass)
             return nothing;
 

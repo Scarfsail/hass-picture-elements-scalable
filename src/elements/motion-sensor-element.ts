@@ -1,13 +1,13 @@
 import { html } from "lit"
 import { customElement } from "lit/decorators.js";
 import "../components/last-change-text";
-import { ElementBaseArmable } from "./base";
+import { ElementEntityArmableBase } from "./base";
 import { HassEntity } from "home-assistant-js-websocket";
 
 
 @customElement("motion-sensor-element")
-export class MotionSensorElement extends ElementBaseArmable {
-    protected override renderContent(entity: HassEntity) {
+export class MotionSensorElement extends ElementEntityArmableBase {
+    protected override renderEntityContent(entity: HassEntity) {
 
         //const opened = entity.state == "on";
 
