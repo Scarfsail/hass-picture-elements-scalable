@@ -12,6 +12,7 @@ interface PictureElementsScalableConfig extends LovelaceCardConfig {
     image_width: number;
     image_height: number;
     max_scale?: number;
+    min_scale?: number;
 }
 interface PictureElement {
     type: string;
@@ -93,6 +94,10 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
             scale.scaleX = Math.min(scale.scaleX, this.config.max_scale);
             scale.scaleY = Math.min(scale.scaleY, this.config.max_scale);
         }
+        if (this.config.min_scale) {
+            scale.scaleX = Math.max(scale.scaleX, this.config.min_scale);
+            scale.scaleY = Math.max(scale.scaleY, this.config.min_scale);
+        }        
         this.style.setProperty("position", "relative");
 
         this.card = this.card || this.createCardElement(this.config);
