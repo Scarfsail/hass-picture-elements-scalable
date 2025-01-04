@@ -26,6 +26,9 @@ export abstract class ElementEntityBase<TConfig extends ElementEntityBaseConfig 
 
 
     private _showMoreInfo() {
+        if (!this.showMoreInfoOnClick) 
+            return;
+        
         const entityId = this._config?.entity;
         const event = new CustomEvent("hass-more-info", {
             detail: { entityId: entityId },
@@ -34,6 +37,7 @@ export abstract class ElementEntityBase<TConfig extends ElementEntityBaseConfig 
         });
         this.dispatchEvent(event);
     }
+    protected showMoreInfoOnClick = true;
 
     protected override renderContent() {
         if (!this._config || !this.hass) {
