@@ -15,7 +15,7 @@ export abstract class ElementBase<TConfig extends ElementBaseConfig = ElementBas
 
     @state() protected _config?: TConfig;
 
-    setConfig(config: TConfig) {
+    async setConfig(config: TConfig) {
         this._config = config;
 
         if (config.style) {

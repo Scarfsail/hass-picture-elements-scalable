@@ -14,8 +14,8 @@ interface DoorWindowElementConfig extends ElementEntityBaseConfig {
 
 @customElement("door-window-element")
 export class DoorWindowElement extends ElementEntityArmableBase<DoorWindowElementConfig> {
-    setConfig(config: DoorWindowElementConfig) {
-        super.setConfig({
+    async setConfig(config: DoorWindowElementConfig) {
+        await super.setConfig({
             ...config,
             height: config.height ?? 7,
             orientation: config.orientation ?? "horizontal"
@@ -36,7 +36,7 @@ export class DoorWindowElement extends ElementEntityArmableBase<DoorWindowElemen
         const color = opened ? 'blue' : alarmState ? (alarmState.armed ? 'red' : 'green') : 'white'
 
         return html`
-            <div style="display:flex; align-items:center; gap:5px; flex-direction:${this._config.orientation == 'horizontal' ? 'column':'row'}">
+            <div style="display:flex; align-items:center; gap:5px; flex-direction:${this._config.orientation == 'horizontal' ? 'column' : 'row'}">
                 <svg width="${width}px" height="${height}px">
                     <path d=${svgPathArea} fill=${color} stroke=${color} strokeDasharray=0 strokeWidth=1 />
                 </svg>

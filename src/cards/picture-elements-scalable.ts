@@ -1,5 +1,5 @@
 import { LitElement, html } from "lit-element"
-
+import { CreateCardElement, getCreateCardElement } from "../utils"
 import { customElement, property, state } from "lit/decorators.js";
 import type { HomeAssistant } from "../../hass-frontend/src/types";
 import type { Lovelace, LovelaceCard } from "../../hass-frontend/src/panels/lovelace/types";
@@ -32,7 +32,7 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
 
 
     //@property({ attribute: false }) public hass?: HomeAssistant;
-    @state() private _helpers: { createCardElement(config: LovelaceCardConfig): LovelaceCard } | null = null;
+    @state() private _createCardElement: CreateCardElement = null;
 
     @property({ attribute: false }) hass?: HomeAssistant;
 
@@ -48,11 +48,8 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
 
     async setConfig(config: PictureElementsScalableConfig) {
         this.config = config;
+        this._createCardElement = await getCreateCardElement();
 
-        if ((window as any).loadCardHelpers) {
-            const helpers = await (window as any).loadCardHelpers()
-            this._helpers = helpers;
-        }
     }
 
     private card?: LovelaceCard;
@@ -97,10 +94,10 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
         if (this.config.min_scale) {
             scale.scaleX = Math.max(scale.scaleX, this.config.min_scale);
             scale.scaleY = Math.max(scale.scaleY, this.config.min_scale);
-        }        
+        }
         this.style.setProperty("position", "relative");
 
-        this.card = this.card || this.createCardElement(this.config);
+        this.card = this.card || this.createPictureCardElement(this.config);
 
         if (this.card)
             this.card.hass = this.hass;
@@ -133,7 +130,7 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
             </div>
             `
   */  }
-    createCardElement(config: PictureElementsScalableConfig) {
+    createPictureCardElement(config: PictureElementsScalableConfig) {
 
         const cardConfig = {
             type: "picture-elements",
@@ -150,7 +147,7 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
             style: config.style
         };
 
-        return this._helpers?.createCardElement(cardConfig);
+        return this._createCardElement?.(cardConfig);
     }
     connectedCallback() {
         super.connectedCallback();

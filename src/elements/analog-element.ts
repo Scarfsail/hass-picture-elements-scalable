@@ -1,7 +1,6 @@
 import { html } from "lit"
-import { customElement, property } from "lit/decorators.js";
-import "../components/last-change-text";
-import { ElementEntityBase, ElementEntityArmableBase } from "./base";
+import { customElement } from "lit/decorators.js";
+import { ElementEntityBase } from "./base";
 import { HassEntity } from "home-assistant-js-websocket";
 
 

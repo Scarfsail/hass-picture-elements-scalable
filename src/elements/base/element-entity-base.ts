@@ -16,8 +16,8 @@ export abstract class ElementEntityBase<TConfig extends ElementEntityBaseConfig 
         }
     `
 
-    setConfig(config: TConfig) {
-        super.setConfig(config);
+    async setConfig(config: TConfig) {
+        await super.setConfig(config);
 
         if (!config.entity) {
             throw Error("Entity required");
@@ -28,7 +28,7 @@ export abstract class ElementEntityBase<TConfig extends ElementEntityBaseConfig 
     private _showMoreInfo() {
         if (!this.showMoreInfoOnClick) 
             return;
-        
+
         const entityId = this._config?.entity;
         const event = new CustomEvent("hass-more-info", {
             detail: { entityId: entityId },
