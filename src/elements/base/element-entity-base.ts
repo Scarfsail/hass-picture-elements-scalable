@@ -43,7 +43,16 @@ export abstract class ElementEntityBase<TConfig extends ElementEntityBaseConfig 
         if (!this._config || !this.hass) {
             return nothing;
         }
+
+        if (!this._config.entity) {
+            return html`Entity is not defined`
+        }
+
         const entity = this.hass.states[this._config.entity]
+
+        if (!entity) {
+            return html`Entity not found: ${this._config.entity}`
+        }
 
         return html`
         <div @click=${this._showMoreInfo}>
