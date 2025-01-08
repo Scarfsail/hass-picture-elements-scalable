@@ -13,6 +13,7 @@ interface PictureElementsScalableConfig extends LovelaceCardConfig {
     image_height: number;
     max_scale?: number;
     min_scale?: number;
+    card_size?: number;
 }
 interface PictureElement {
     type: string;
@@ -37,7 +38,7 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
     @property({ attribute: false }) hass?: HomeAssistant;
 
     getCardSize() {
-        return 1;
+        return this.config?.card_size ?? 1;
     }
 
 
