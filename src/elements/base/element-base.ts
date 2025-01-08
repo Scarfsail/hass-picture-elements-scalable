@@ -25,7 +25,28 @@ export abstract class ElementBase<TConfig extends ElementBaseConfig = ElementBas
         }
 
     }
+    protected async evaluateTemplate(template: string): Promise<string> {
+        if (!template.includes('{{')) 
+            return template;
 
+        if (!this.hass || !template) {
+            const err = "Home Assistant object or template not provided."
+            console.error(err);
+            return err;
+        }
+
+        try {
+            // Call the template API to evaluate the template
+            const response = await this.hass.callApi("POST", "template", {
+                template: template,
+            });
+
+            return response as string;
+        } catch (err) {
+            console.error("Error evaluating template:", err);
+            return "Error evaluating template.";
+        }
+    }
 
     protected render() {
         if (!this._config || !this.hass) {
