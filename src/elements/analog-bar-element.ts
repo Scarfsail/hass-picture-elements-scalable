@@ -21,10 +21,11 @@ interface AnalogBarConfig extends ElementEntityBaseConfig {
 
 @customElement('analog-bar-element')
 class AnalogBar extends ElementEntityBase<AnalogBarConfig> {
-  @state() private activeColor: string = "#ffffff";
+  //@state() private activeColor: string = "#ffffff";
   override async setConfig(config: AnalogBarConfig) {
     await super.setConfig(config);
-    this.activeColor = await this.evaluateTemplate(config.activeColor);
+    //this.subscribeRenderTemplate(config.activeColor, (value) => this.activeColor = value);
+    //this.activeColor = await this.evaluateTemplate(config.activeColor);
   }
  
   protected override renderEntityContent(entity: HassEntity) {
@@ -41,6 +42,8 @@ class AnalogBar extends ElementEntityBase<AnalogBarConfig> {
       bottom: valuesPosition == "bottom" ? "1px" : valuesPosition == "scaleTop" ? `${p.height - height - 2}px` : undefined,
       top: valuesPosition == "scaleBottom" ? `${p.height - height - 2}px` : undefined
     })
+    
+    const activeColor = this.evalJsTemplate(p.activeColor, entity);
 
     return html`
       <div style=${styleMap({ fontSize: `${p.fontSize}px`, position: "relative", width: `${p.width}px`, height: `${p.height}px` })}>
@@ -63,7 +66,7 @@ class AnalogBar extends ElementEntityBase<AnalogBarConfig> {
           bottom: "1px",
 
           height: `${p.height - 1}px`,
-          background: this.activeColor
+          background: activeColor
         })}></div>
         
         <div style=${styleMap({

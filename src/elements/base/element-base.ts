@@ -2,6 +2,7 @@ import { LitElement, TemplateResult, css, html, nothing } from "lit"
 import { property, state } from "lit/decorators.js";
 import type { HomeAssistant } from "../../../hass-frontend/src/types";
 import type { HassEntity } from "home-assistant-js-websocket";
+import { evalJsTemplate, subscribeRenderTemplate } from "../../utils";
 
 export interface ElementBaseConfig {
     style: any;
@@ -25,8 +26,28 @@ export abstract class ElementBase<TConfig extends ElementBaseConfig = ElementBas
         }
 
     }
+
+    protected async subscribeRenderTemplate(template: string, onChange: (result: string) => void) {
+        if (!this.hass) {
+            console.error("Error: Home Assistant object not provided.");
+            return;
+        }
+        if (!template.includes('{{')) {
+            onChange(template);
+            return;
+        }
+
+        await subscribeRenderTemplate(this.hass.connection, template, onChange);
+    }
+    protected evalJsTemplate(jsTemplate: string, entity?: HassEntity): string {
+        if (!this.hass) {
+            console.error("Error: Home Assistant object not provided.");
+            return "Error: Home Assistant object not provided.";
+        }
+        return evalJsTemplate(this, this.hass, entity, jsTemplate)
+    }
     protected async evaluateTemplate(template: string): Promise<string> {
-        if (!template.includes('{{')) 
+        if (!template.includes('{{'))
             return template;
 
         if (!this.hass || !template) {
