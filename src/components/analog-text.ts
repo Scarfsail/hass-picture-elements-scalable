@@ -25,7 +25,7 @@ class AnalogText extends LitElement {
 
     const value = parseFloat(this.entity.state);
     const units = this.entity.attributes.unit_of_measurement as string;
-    const decimals = this.decimals ?? 0;
+    const decimals = this.decimals ?? 1;
     const valueAndUnits = this.shorten_and_use_prefix ? shortenNumberAndAddPrefixUnits(value, units, this.shorten_and_use_prefix) : { value: value, units: units };
 
     return html`
