@@ -52,6 +52,15 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
         this._createCardElement = await getCreateCardElement();
 
     }
+    
+    public getLayoutOptions() {
+        const rows = this.config?.image_height ? (Math.ceil( (this.config?.image_height-8) / 56)) : 1 
+        return {
+          grid_rows: rows,
+          grid_columns: 4,
+          grid_min_rows: rows,
+        };
+      }
 
     private card?: LovelaceCard;
 
