@@ -15,7 +15,6 @@ class AnalogText extends LitElement {
   static styles = css`
     /* Add component styles here */
         :host {
-            font-size: 11px;
             white-space: nowrap;
         }
   `;
