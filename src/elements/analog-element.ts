@@ -1,15 +1,21 @@
 import { html } from "lit"
 import { customElement } from "lit/decorators.js";
-import { ElementEntityBase } from "./base";
+import { ElementEntityBase, ElementEntityBaseConfig } from "./base";
 import { HassEntity } from "home-assistant-js-websocket";
+import { ShortenNumberPrefixType } from "../utils";
 
+interface AnalogElementConfig extends ElementEntityBaseConfig {
+    decimals?: number;
+    shorten_and_use_prefix?: ShortenNumberPrefixType
+
+}
 
 @customElement("analog-element")
-export class AnalogElement extends ElementEntityBase {
+export class AnalogElement extends ElementEntityBase<AnalogElementConfig> {
     protected override renderEntityContent(entity: HassEntity) {
         const units = entity.attributes.unit_of_measurement;
         return html`
-            <span>${entity.state}<span style="font-size:50%">${units}</span></span>
+            <analog-text .entity=${entity} .decimals=${this._config?.decimals} .shorten_and_use_prefix=${this._config?.shorten_and_use_prefix}></analog-text>
         `
     }
 }
