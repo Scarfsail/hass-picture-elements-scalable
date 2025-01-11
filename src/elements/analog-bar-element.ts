@@ -15,7 +15,7 @@ interface AnalogBarConfig extends ElementEntityBaseConfig {
   border_color: string;
   active_color: string;
   bg_color: string;
-  fontSize: number;
+  font_size: number;
   value_position?: "bottom" | "scaleTop" | "scaleBottom"
 }
 
@@ -46,9 +46,9 @@ class AnalogBar extends ElementEntityBase<AnalogBarConfig> {
     const activeColor = this.evalJsTemplate(p.active_color, entity) ?? "#404854";
     const borderColor = this._config?.border_color ?? "gray";
     const bgColor = this._config?.bg_color ?? "rgba(0, 0, 0, 0.7)";
-
+    const fontSize = this._config?.font_size ?? 11;
     return html`
-      <div style=${styleMap({ fontSize: `${p.fontSize}px`, position: "relative", width: `${p.width}px`, height: `${p.height}px` })}>
+      <div style=${styleMap({ fontSize: `${fontSize}px`, position: "relative", width: `${p.width}px`, height: `${p.height}px` })}>
         <div style=${styleMap({
           position: "absolute",
           left: `0px`,
@@ -80,7 +80,7 @@ class AnalogBar extends ElementEntityBase<AnalogBarConfig> {
           background: bgColor
         })}></div>
 
-        ${p.fontSize > 0 ?
+        ${fontSize > 0 ?
         html`<div style=${styleMap({ position: "absolute", left: `4px`, width: `${p.width - 4}px`, ...getValueVerticalPosition(valueHeight) })}>
             <span>${entity.state}<span style="font-size:50%">${entity.attributes.unit_of_measurement}</span></span>
         </div>`: null}
