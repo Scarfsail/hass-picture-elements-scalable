@@ -45,7 +45,7 @@ export class GateButtonsElement extends ElementEntityBase<GateButtonsElementConf
 
     private getGateButton(type: GateActions, entity_id: string) {
         const buttonTextAndColor = this.getGateButtonTextAncColor(type);
-        return html`<ha-button  style="--mdc-theme-primary: ${buttonTextAndColor.color}; " @click=${() => this.performGateAction(type, entity_id)}>${buttonTextAndColor.text}</ha-button>`
+        return html`<ha-button outlined style="--mdc-theme-primary: ${buttonTextAndColor.color}; " @click=${() => this.performGateAction(type, entity_id)}>${buttonTextAndColor.text}</ha-button>`
     }
 
     private getGateButtonTextAncColor(type: GateActions) {
