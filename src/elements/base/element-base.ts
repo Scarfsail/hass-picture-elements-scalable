@@ -40,6 +40,9 @@ export abstract class ElementBase<TConfig extends ElementBaseConfig = ElementBas
         await subscribeRenderTemplate(this.hass.connection, template, onChange);
     }
     protected evalJsTemplate(jsTemplate: string, entity?: HassEntity): string {
+        if (!jsTemplate)
+            return jsTemplate;
+        
         if (!this.hass) {
             console.error("Error: Home Assistant object not provided.");
             return "Error: Home Assistant object not provided.";

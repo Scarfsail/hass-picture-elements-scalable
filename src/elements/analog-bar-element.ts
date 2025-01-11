@@ -12,11 +12,11 @@ interface AnalogBarConfig extends ElementEntityBaseConfig {
   max: number;
   height: number;
   width: number;
-  borderColor: string;
-  activeColor: string;
-  bgColor: string;
+  border_color: string;
+  active_color: string;
+  bg_color: string;
   fontSize: number;
-  valuesPosition?: "bottom" | "scaleTop" | "scaleBottom"
+  value_position?: "bottom" | "scaleTop" | "scaleBottom"
 }
 
 @customElement('analog-bar-element')
@@ -37,13 +37,13 @@ class AnalogBar extends ElementEntityBase<AnalogBarConfig> {
 
     const valueHeight = isNaN(val) ? 0 : calculateHeight(val);
 
-    const valuesPosition = p.valuesPosition ?? "bottom";
+    const valuesPosition = p.value_position ?? "bottom";
     const getValueVerticalPosition = (height: number) => ({
       bottom: valuesPosition == "bottom" ? "1px" : valuesPosition == "scaleTop" ? `${p.height - height - 2}px` : undefined,
       top: valuesPosition == "scaleBottom" ? `${p.height - height - 2}px` : undefined
     })
     
-    const activeColor = this.evalJsTemplate(p.activeColor, entity);
+    const activeColor = this.evalJsTemplate(p.active_color, entity) ?? "#404854";
 
     return html`
       <div style=${styleMap({ fontSize: `${p.fontSize}px`, position: "relative", width: `${p.width}px`, height: `${p.height}px` })}>
@@ -55,7 +55,7 @@ class AnalogBar extends ElementEntityBase<AnalogBarConfig> {
           height: `${p.height}px`,
           borderStyle: "solid",
           borderWidth: "1px",
-          borderColor:p.borderColor
+          borderColor:p.border-color
         })}></div>
 
         <div style=${styleMap({
@@ -75,7 +75,7 @@ class AnalogBar extends ElementEntityBase<AnalogBarConfig> {
           top: "1px",
           width: `${p.width - 1}px`,
           height: `${p.height - valueHeight - 1}px`,
-          background: p.bgColor
+          background: p.bg_color
         })}></div>
 
         ${p.fontSize > 0 ?
