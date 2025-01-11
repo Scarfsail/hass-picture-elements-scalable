@@ -44,6 +44,8 @@ class AnalogBar extends ElementEntityBase<AnalogBarConfig> {
     })
     
     const activeColor = this.evalJsTemplate(p.active_color, entity) ?? "#404854";
+    const borderColor = this._config?.border_color ?? "gray";
+    const bgColor = this._config?.bg_color ?? "rgba(0, 0, 0, 0.7)";
 
     return html`
       <div style=${styleMap({ fontSize: `${p.fontSize}px`, position: "relative", width: `${p.width}px`, height: `${p.height}px` })}>
@@ -55,7 +57,7 @@ class AnalogBar extends ElementEntityBase<AnalogBarConfig> {
           height: `${p.height}px`,
           borderStyle: "solid",
           borderWidth: "1px",
-          borderColor:p.border-color
+          borderColor:borderColor
         })}></div>
 
         <div style=${styleMap({
@@ -75,7 +77,7 @@ class AnalogBar extends ElementEntityBase<AnalogBarConfig> {
           top: "1px",
           width: `${p.width - 1}px`,
           height: `${p.height - valueHeight - 1}px`,
-          background: p.bg_color
+          background: bgColor
         })}></div>
 
         ${p.fontSize > 0 ?
