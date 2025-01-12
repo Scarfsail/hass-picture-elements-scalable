@@ -55,7 +55,7 @@ export class ScriptButtonsGroupElement extends ElementBase<ScriptButtonsGroupEle
             <div style="position:relative">
                 ${this._config?.scripts.map(scriptButton => html`
                     <div style="position:absolute;left:${scriptButton.left}px;top:${scriptButton.top}px">
-                        <ha-button raised @click=${() => this._runScript(scriptButton.entity)}>${scriptButton.title}</ha-button>
+                        <ha-button raised @click=${() => this._runScript(scriptButton.entity)} style="--mdc-theme-primary: var(--dark-grey-color); ">${scriptButton.title}</ha-button>
                     </div>
                 `)}
             </div>
