@@ -11,6 +11,10 @@ interface ScriptButtonDefinition {
 
 interface ScriptButtonsGroupElementConfig extends ElementBaseConfig {
     scripts: ScriptButtonDefinition[];
+    running_left: number;
+    running_top: number;
+    running_width: number;
+    running_height: number;
 }
 
 
@@ -39,11 +43,11 @@ export class ScriptButtonsGroupElement extends ElementBase<ScriptButtonsGroupEle
         if (runningScriptButton) {
             const runningScript = this.hass.states[runningScriptButton.entity];
             return html`
-                <div style="position:relative">
+                <div style="position:absolute;left:${this._config?.running_left ?? 0}px;top:${this._config?.running_top ?? 0}px;width:${this._config?.running_width ?? 200}px;height:${this._config?.running_height ?? 100}px;"> 
                     <div>Probíhá: ${runningScriptButton.title}</div>
                     <div>${runningScript.attributes["last_action"]}</div>
                     <div>
-                        <ha-button raised class="warning" @click=${() => this._stopScript(runningScriptButton.entity)}>
+                        <ha-button raised style="--mdc-theme-primary: var(--warning-color); " @click=${() => this._stopScript(runningScriptButton.entity)}>
                             ${`Zrušit ${runningScriptButton.title}`}
                         </ha-button>
                     </div>
