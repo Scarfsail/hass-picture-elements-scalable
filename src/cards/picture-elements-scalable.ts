@@ -20,8 +20,12 @@ interface PictureElement {
     style: any;
     entity: string;
     tap_action: any;
-    left: string | number;
-    top: string | number;
+    left?: string | number;
+    right?: string | number;
+    top?: string | number;
+    bottom?: string | number;
+    width?: string | number;
+    height?: string | number;
 }
 
 
@@ -52,15 +56,15 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
         this._createCardElement = await getCreateCardElement();
 
     }
-    
+
     public getLayoutOptions() {
-        const rows = this.config?.image_height ? (Math.ceil( (this.config?.image_height-8) / 56)) : 1 
+        const rows = this.config?.image_height ? (Math.ceil((this.config?.image_height - 8) / 56)) : 1
         return {
-          grid_rows: rows,
-          grid_columns: 4,
-          grid_min_rows: rows,
+            grid_rows: rows,
+            grid_columns: 4,
+            grid_min_rows: rows,
         };
-      }
+    }
 
     private card?: LovelaceCard;
 
@@ -145,15 +149,24 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
         const cardConfig = {
             type: "picture-elements",
             image: config.image,
-            elements: config.elements.map(el => ({
-                ...el, style: {
-                    ...el.style,
-                    /*color: "transparent",*/
-                    transform: "none",
-                    left: typeof el.left === "string" ? el.left : `${el.left}px`,
-                    top: typeof el.top === "string" ? el.top : `${el.top}px`,
-                }
-            })),
+            elements: config.elements.map(el => {
+                const style = {...el.style};
+                style.transform = "none";
+                if (el.left!==undefined)
+                    style.left = typeof el.left === "string" ? el.left : `${el.left}px`;
+                if (el.top!==undefined)
+                    style.top = typeof el.top === "string" ? el.top : `${el.top}px`;
+                if (el.right!==undefined)
+                    style.right = typeof el.right === "string" ? el.right : `${el.right}px`;
+                if (el.bottom!==undefined)
+                    style.bottom = typeof el.bottom === "string" ? el.bottom : `${el.bottom}px`;
+                if (el.height!==undefined)
+                    style.height = typeof el.height === "string" ? el.height : `${el.height}px`;
+                if (el.width!==undefined)
+                    style.width = typeof el.width === "string" ? el.width : `${el.width}px`;    
+                
+                return {...el, style: style}
+            }),
             style: config.style
         };
 
