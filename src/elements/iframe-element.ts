@@ -17,7 +17,7 @@ export class IframeElement extends ElementBase<IframeElementConfig> {
             return nothing;
 
         return html`
-            <iframe src=${this._config.src} style="width: ${this._config.width}px; height: ${this._config.height}px;">
+            <iframe src=${this._config.src} style="width: ${this._config.width}px; height: ${this._config.height}px;border: none;">
 
             </iframe>
         `
