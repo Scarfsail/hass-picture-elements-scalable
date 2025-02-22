@@ -37,9 +37,11 @@ export class DoorWindowElement extends ElementEntityArmableBase<DoorWindowElemen
 
         return html`
             <div style="display:flex; align-items:center; gap:5px; flex-direction:${this._config.orientation == 'horizontal' ? 'column' : 'row'}">
-                <svg width="${width}px" height="${height}px">
-                    <path d=${svgPathArea} fill=${color} stroke=${color} strokeDasharray=0 strokeWidth=1 />
-                </svg>
+               <div>
+                    <svg width="${width}px" height="${height}px">
+                        <path d=${svgPathArea} fill=${color} stroke=${color} strokeDasharray=0 strokeWidth=1 />
+                    </svg>
+                </div>
                 <last-change-text .entity=${entity}></last-change-text>
             </div>            
             `
