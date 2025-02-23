@@ -25,7 +25,7 @@ export class BadgeElements extends ElementBase<BadgeElementsConfig> {
             }))
         }
         for (const badge of this.badges) {
-            badge.element.setConfig({ entity: badge.entity });
+            badge.element.setConfig({ entity: badge.entity, show_name: true });
             badge.element.hass = this.hass;
         }
 
