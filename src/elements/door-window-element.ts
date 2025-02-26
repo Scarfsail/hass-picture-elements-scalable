@@ -42,7 +42,7 @@ export class DoorWindowElement extends ElementEntityArmableBase<DoorWindowElemen
                         <path d=${svgPathArea} fill=${color} stroke=${color} strokeDasharray=0 strokeWidth=1 />
                     </svg>
                 </div>
-                <last-change-text .entity=${entity}></last-change-text>
+                <last-change-text .entity=${entity} .secondsForSuperHighlight=${5}></last-change-text>
             </div>            
             `
     }
