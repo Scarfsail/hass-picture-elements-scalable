@@ -33,7 +33,7 @@ export class DoorWindowElement extends ElementEntityArmableBase<DoorWindowElemen
 
 
         const alarmState = this.getAlarmoSensorState();
-        const color = opened ? 'blue' : alarmState ? (alarmState.armed ? 'red' : 'green') : 'white'
+        const color = opened ? '#6464FF' : alarmState ? (alarmState.armed ? 'red' : 'green') : 'white'
 
         return html`
             <div style="display:flex; align-items:center; gap:5px; flex-direction:${this._config.orientation == 'horizontal' ? 'column' : 'row'}">
