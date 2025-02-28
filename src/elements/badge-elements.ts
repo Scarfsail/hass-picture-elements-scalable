@@ -19,13 +19,18 @@ export class BadgeElements extends ElementBase<BadgeElementsConfig> {
 
     protected override renderContent() {
         if (!this.badges) {
-            this.badges = this._config!.entities.map(entity => ({
-                "entity": entity,
-                "element": document.createElement('hui-entity-badge') as any
-            }))
+            this.badges = this._config!.entities.map(entity => {
+                const element = document.createElement('hui-entity-badge') as any
+                element.element.setConfig({ entity: entity, show_name: true });
+                return {
+                    "entity": entity,
+                    "element": element
+                }
+            })
+
+
         }
         for (const badge of this.badges) {
-            badge.element.setConfig({ entity: badge.entity, show_name: true });
             badge.element.hass = this.hass;
         }
 

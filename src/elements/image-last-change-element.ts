@@ -15,15 +15,15 @@ export class ImageLastChangeElement extends ElementEntityBase<ImageLastChangeEle
         if (!this.element) {
             this.element = document.createElement('hui-image-element') as any;
             const size = (this._config?.size || 50) + "px";
-            this.element.style.width = size;
-            this.element.style.height = size;
+            this.element.style.setProperty("width", size)
+            this.element.style.setProperty("height", size)
 
             // Apply circular styling
-            this.element.style.borderRadius = "50%";
-            this.element.style.overflow = "hidden";
+            this.element.style.setProperty("border-radius", "50%");
+            this.element.style.setProperty("overflow", "hidden");
+            this.element.setConfig(this._config)
         }
 
-        this.element.setConfig(this._config)
         this.element.hass = this.hass;
 
         return html`

@@ -14,11 +14,11 @@ export class BadgeElement extends ElementEntityBase<BadgeElementConfig> {
 
     private element: any;
     protected override renderEntityContent(entity: HassEntity) {
-        if (!this.element)
+        if (!this.element) {
             this.element = document.createElement('hui-entity-badge') as any;
+            this.element.setConfig(this._config)
+        }
 
-
-        this.element.setConfig(this._config)
         this.element.hass = this.hass;
 
         return html`
