@@ -2,13 +2,13 @@ import { LitElement, html } from "lit-element"
 import { CreateCardElement, getCreateCardElement } from "../utils"
 import { customElement, property, state } from "lit/decorators.js";
 import type { HomeAssistant } from "../../hass-frontend/src/types";
-import type { Lovelace, LovelaceCard } from "../../hass-frontend/src/panels/lovelace/types";
+import type { Lovelace, LovelaceCard, LovelaceCardEditor } from "../../hass-frontend/src/panels/lovelace/types";
 import type { LovelaceCardConfig } from "../../hass-frontend/src/data/lovelace/config/card";
 
-interface PictureElementsScalableConfig extends LovelaceCardConfig {
+export interface PictureElementsScalableConfig extends LovelaceCardConfig {
     elements: PictureElement[];
     image: string;
-    style: any
+    style?: any
     image_width: number;
     image_height: number;
     max_scale?: number;
@@ -18,8 +18,8 @@ interface PictureElementsScalableConfig extends LovelaceCardConfig {
 interface PictureElement {
     type: string;
     style: any;
-    entity: string;
-    tap_action: any;
+    entity?: string;
+    tap_action?: any;
     left?: string | number;
     right?: string | number;
     top?: string | number;
@@ -201,5 +201,21 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
         */
         // console.log(`Fit into W:${fitIntoWidth}, H:${fitIntoHeight}  ;  Content W:${contentWidth}, H: ${contentHeight}  ;  Scale W: ${scaleW}, H:${scaleH}`)
         return { scaleX: scaleW, scaleY: scaleH }
+    }
+
+    public static async getConfigElement(): Promise<LovelaceCardEditor> {
+        await import("./picture-elements-scalable-editor");
+        return document.createElement("picture-elements-scalable-editor") as LovelaceCardEditor;
+    }
+
+    public static getStubConfig(): PictureElementsScalableConfig {
+        return {
+            type: "custom:picture-elements-scalable",
+            image: "/local/path/to/image.png",
+            image_width: 1360,
+            image_height: 849,
+            elements: [               
+            ]
+        };
     }
 }
