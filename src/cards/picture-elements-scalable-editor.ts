@@ -12,6 +12,7 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
     @state() private _editingGroupIndex: number | null = null;
     @state() private _editingElementIndex: number | null = null;
     @state() private _editingElement: any = null;
+    @state() private _pendingAdd: { groupIndex: number; index: number; timestamp: number } | null = null;
 
     public setConfig(config: PictureElementsScalableConfig): void {
         this._config = { ...config };
@@ -155,21 +156,41 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
                                             </div>
                                             ${group.elements && group.elements.length > 0
                                                 ? html`
-                                                    <div class="elements-list">
-                                                        ${group.elements.map((element, elementIndex) => html`
-                                                            <div class="element-row ${this._editingGroupIndex === groupIndex && this._editingElementIndex === elementIndex ? 'editing' : ''}">
-                                                                ${this._editingGroupIndex === groupIndex && this._editingElementIndex === elementIndex
-                                                                    ? this._renderEditingElement(groupIndex, elementIndex)
-                                                                    : this._renderElementInfo(element, groupIndex, elementIndex)
-                                                                }
-                                                            </div>
-                                                        `)}
-                                                    </div>
+                                                    <ha-sortable 
+                                                        handle-selector=".handle"
+                                                        draggable-selector=".element-row"
+                                                        @item-moved=${(ev: any) => this._elementMoved(ev, groupIndex)}
+                                                        @item-added=${(ev: any) => this._elementAdded(ev, groupIndex)}
+                                                        @item-removed=${(ev: any) => this._elementRemoved(ev, groupIndex)}
+                                                        group="elements"
+                                                        .disabled=${false}
+                                                    >
+                                                        <div class="elements-list">
+                                                            ${group.elements.map((element, elementIndex) => html`
+                                                                <div class="element-row ${this._editingGroupIndex === groupIndex && this._editingElementIndex === elementIndex ? 'editing' : ''}">
+                                                                    ${this._editingGroupIndex === groupIndex && this._editingElementIndex === elementIndex
+                                                                        ? this._renderEditingElement(groupIndex, elementIndex)
+                                                                        : this._renderElementInfo(element, groupIndex, elementIndex)
+                                                                    }
+                                                                </div>
+                                                            `)}
+                                                        </div>
+                                                    </ha-sortable>
                                                 `
                                                 : html`
-                                                    <div class="empty-elements">
-                                                        No elements in this group
-                                                    </div>
+                                                    <ha-sortable 
+                                                        handle-selector=".handle"
+                                                        draggable-selector=".element-row"
+                                                        @item-moved=${(ev: any) => this._elementMoved(ev, groupIndex)}
+                                                        @item-added=${(ev: any) => this._elementAdded(ev, groupIndex)}
+                                                        @item-removed=${(ev: any) => this._elementRemoved(ev, groupIndex)}
+                                                        group="elements"
+                                                        .disabled=${false}
+                                                    >
+                                                        <div class="empty-elements">
+                                                            No elements in this group
+                                                        </div>
+                                                    </ha-sortable>
                                                 `
                                             }
                                         </div>
@@ -185,6 +206,9 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
 
     private _renderElementInfo(element: any, groupIndex: number, elementIndex: number) {
         return html`
+            <ha-icon-button class="handle" .disabled=${false}>
+                <ha-icon icon="mdi:drag-horizontal"></ha-icon>
+            </ha-icon-button>
             <div class="element-info">
                 <div class="element-primary">
                     ${this._getElementDisplayName(element)}
@@ -194,11 +218,11 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
                 </div>
             </div>
             <div class="element-actions">
-                <ha-icon-button @click=${() => this._editElement(groupIndex, elementIndex)}>
-                    <ha-icon icon="mdi:pencil"></ha-icon>
-                </ha-icon-button>
                 <ha-icon-button @click=${() => this._removeElement(groupIndex, elementIndex)}>
                     <ha-icon icon="mdi:delete"></ha-icon>
+                </ha-icon-button>
+                <ha-icon-button @click=${() => this._editElement(groupIndex, elementIndex)}>
+                    <ha-icon icon="mdi:pencil"></ha-icon>
                 </ha-icon-button>
             </div>
         `;
@@ -384,6 +408,82 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
         this._configChanged();
     }
 
+    private _elementAdded(ev: any, groupIndex: number): void {
+        // Store the added element info for cross-group moves
+        this._pendingAdd = {
+            groupIndex,
+            index: ev.detail.index,
+            timestamp: Date.now()
+        };
+    }
+
+    private _elementRemoved(ev: any, groupIndex: number): void {
+        const removedIndex = ev.detail.index;
+        
+        // Check if we have a pending add (cross-group move)
+        if (this._pendingAdd && (Date.now() - this._pendingAdd.timestamp) < 100) {
+            const sourceGroupIndex = groupIndex;
+            const targetGroupIndex = this._pendingAdd.groupIndex;
+            const targetIndex = this._pendingAdd.index;
+            
+            const groups = [...this._config.groups];
+            
+            // Get the element that was removed
+            const sourceElements = [...groups[sourceGroupIndex].elements];
+            const [movedElement] = sourceElements.splice(removedIndex, 1);
+            
+            // Add to target group
+            const targetElements = [...groups[targetGroupIndex].elements];
+            targetElements.splice(targetIndex, 0, movedElement);
+            
+            // Update both groups
+            groups[sourceGroupIndex] = {
+                ...groups[sourceGroupIndex],
+                elements: sourceElements
+            };
+            
+            groups[targetGroupIndex] = {
+                ...groups[targetGroupIndex],
+                elements: targetElements
+            };
+            
+            this._config = {
+                ...this._config,
+                groups,
+            };
+            
+            this._configChanged();
+            
+            // Clear pending add
+            this._pendingAdd = null;
+        }
+    }
+
+    private _elementMoved(ev: any, groupIndex: number): void {
+        ev.stopPropagation();
+        
+        const { oldIndex, newIndex } = ev.detail;
+
+        const groups = [...this._config.groups];
+        
+        // Moving within the same group
+        const elements = [...groups[groupIndex].elements];
+        const [movedElement] = elements.splice(oldIndex, 1);
+        elements.splice(newIndex, 0, movedElement);
+        
+        groups[groupIndex] = {
+            ...groups[groupIndex],
+            elements
+        };
+
+        this._config = {
+            ...this._config,
+            groups,
+        };
+
+        this._configChanged();
+    }
+
     private _configChanged(): void {
         const event = new CustomEvent("config-changed", {
             detail: { config: this._config },
@@ -534,6 +634,54 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
         .element-row.editing {
             background: var(--secondary-background-color);
             padding: 8px 16px;
+            align-items: stretch;
+            display: flex;
+            min-height: 20px;
+        }
+
+        .element-row.editing .element-editor {
+            flex: 1;
+            margin-right: 16px;
+            max-width: calc(100% - 48px); /* Reserve space for back button */
+            overflow: hidden;
+        }
+
+        .element-row.editing .element-editor ha-yaml-editor {
+            width: 100%;
+            max-width: 100%;
+            overflow: auto;
+        }
+
+        .element-row.editing .element-actions {
+            flex-shrink: 0;
+            align-self: flex-start;
+            position: sticky;
+            top: 8px;
+        }
+
+        .handle {
+            --mdc-icon-button-size: 32px;
+            --mdc-icon-size: 16px;
+            cursor: grab;
+            color: var(--secondary-text-color);
+            margin-right: 8px;
+        }
+
+        .handle:hover {
+            color: var(--primary-text-color);
+        }
+
+        .handle[disabled] {
+            cursor: not-allowed;
+            opacity: 0.3;
+        }
+
+        .element-row.sortable-ghost {
+            opacity: 0.5;
+        }
+
+        .element-row.sortable-chosen .handle {
+            cursor: grabbing;
         }
 
         .element-editor {
