@@ -9,13 +9,14 @@ import type { PictureElementsScalableConfig } from "./picture-elements-scalable"
 export class PictureElementsScalableEditor extends LitElement implements LovelaceCardEditor {
     @property({ attribute: false }) public hass!: HomeAssistant;
     @state() private _config!: PictureElementsScalableConfig;
-    @state() private _editingIndex: number | null = null;
+    @state() private _editingGroupIndex: number | null = null;
+    @state() private _editingElementIndex: number | null = null;
     @state() private _editingElement: any = null;
 
     public setConfig(config: PictureElementsScalableConfig): void {
         this._config = { ...config };
-        if (!this._config.elements) {
-            this._config.elements = [];
+        if (!this._config.groups) {
+            this._config.groups = [];
         }
     }
 
@@ -107,34 +108,72 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
                     ></ha-textfield>
                 </div>
 
-                <!-- Elements Configuration -->
+                <!-- Groups Configuration -->
                 <div class="config-section">
                     <div class="header">
-                        <div class="header-title">Elements</div>
-                        <ha-icon-button @click=${this._addElement} class="add-element">
+                        <div class="header-title">Element Groups</div>
+                        <ha-icon-button @click=${this._addGroup} class="add-element">
                             <ha-icon icon="mdi:plus"></ha-icon>
                         </ha-icon-button>
                     </div>
 
-                    ${this._config.elements.length === 0 
+                    ${this._config.groups.length === 0 
                         ? html`
                             <div class="empty-state">
                                 <ha-icon icon="mdi:shape-plus"></ha-icon>
-                                <div class="empty-state-text">No elements</div>
+                                <div class="empty-state-text">No groups</div>
                                 <div class="empty-state-subtext">
-                                    Elements define interactive areas on your image
+                                    Groups help organize elements by area or function
                                 </div>
                             </div>
                         `
                         : html`
-                            <div class="elements-list">
-                                ${this._config.elements.map((element, index) => html`
-                                    <div class="element-row ${this._editingIndex === index ? 'editing' : ''}">
-                                        ${this._editingIndex === index 
-                                            ? this._renderEditingElement(index)
-                                            : this._renderElementInfo(element, index)
-                                        }
-                                    </div>
+                            <div class="groups-list">
+                                ${this._config.groups.map((group, groupIndex) => html`
+                                    <ha-expansion-panel .expanded=${false}>
+                                        <div slot="header" class="group-header-content">
+                                            <ha-textfield
+                                                label="Group Name"
+                                                .value=${group.group_name}
+                                                @input=${(ev: any) => this._groupNameChanged(ev, groupIndex)}
+                                                @click=${(ev: any) => ev.stopPropagation()}
+                                                placeholder="e.g., Living Room"
+                                            ></ha-textfield>
+                                            <div class="group-header-actions">
+                                                <span class="element-count">${group.elements?.length || 0} elements</span>
+                                                <ha-icon-button @click=${(ev: any) => this._removeGroupClick(ev, groupIndex)}>
+                                                    <ha-icon icon="mdi:delete"></ha-icon>
+                                                </ha-icon-button>
+                                            </div>
+                                        </div>
+                                        <div class="group-content">
+                                            <div class="elements-header">
+                                                <span>Elements</span>
+                                                <ha-icon-button @click=${() => this._addElementToGroup(groupIndex)} class="add-element-small">
+                                                    <ha-icon icon="mdi:plus"></ha-icon>
+                                                </ha-icon-button>
+                                            </div>
+                                            ${group.elements && group.elements.length > 0
+                                                ? html`
+                                                    <div class="elements-list">
+                                                        ${group.elements.map((element, elementIndex) => html`
+                                                            <div class="element-row ${this._editingGroupIndex === groupIndex && this._editingElementIndex === elementIndex ? 'editing' : ''}">
+                                                                ${this._editingGroupIndex === groupIndex && this._editingElementIndex === elementIndex
+                                                                    ? this._renderEditingElement(groupIndex, elementIndex)
+                                                                    : this._renderElementInfo(element, groupIndex, elementIndex)
+                                                                }
+                                                            </div>
+                                                        `)}
+                                                    </div>
+                                                `
+                                                : html`
+                                                    <div class="empty-elements">
+                                                        No elements in this group
+                                                    </div>
+                                                `
+                                            }
+                                        </div>
+                                    </ha-expansion-panel>
                                 `)}
                             </div>
                         `
@@ -144,7 +183,7 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
         `;
     }
 
-    private _renderElementInfo(element: any, index: number) {
+    private _renderElementInfo(element: any, groupIndex: number, elementIndex: number) {
         return html`
             <div class="element-info">
                 <div class="element-primary">
@@ -155,22 +194,23 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
                 </div>
             </div>
             <div class="element-actions">
-                <ha-icon-button @click=${() => this._editElement(index)}>
+                <ha-icon-button @click=${() => this._editElement(groupIndex, elementIndex)}>
                     <ha-icon icon="mdi:pencil"></ha-icon>
                 </ha-icon-button>
-                <ha-icon-button @click=${() => this._removeElement(index)}>
+                <ha-icon-button @click=${() => this._removeElement(groupIndex, elementIndex)}>
                     <ha-icon icon="mdi:delete"></ha-icon>
                 </ha-icon-button>
             </div>
         `;
     }
 
-    private _editElement(index: number): void {
-        this._editingIndex = index;
-        this._editingElement = {...this._config.elements[index]}; // Deep clone
+    private _editElement(groupIndex: number, elementIndex: number): void {
+        this._editingGroupIndex = groupIndex;
+        this._editingElementIndex = elementIndex;
+        this._editingElement = {...this._config.groups[groupIndex].elements[elementIndex]};
     }
 
-    private _renderEditingElement(index: number) {
+    private _renderEditingElement(groupIndex: number, elementIndex: number) {
         return html`
             <div class="element-editor">
                 <ha-yaml-editor
@@ -211,21 +251,26 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
     }
 
     private _cancelEdit(): void {
-        this._editingIndex = null;
+        this._editingGroupIndex = null;
+        this._editingElementIndex = null;
         this._editingElement = null;
     }
 
     private _editingElementChanged(ev: any): void {
         this._editingElement = ev.detail.value;
         
-        // Apply changes immediately to the config
-        if (this._editingIndex !== null && this._editingElement) {
-            const elements = [...this._config.elements];
-            elements[this._editingIndex] = this._editingElement;
+        if (this._editingGroupIndex !== null && this._editingElementIndex !== null && this._editingElement) {
+            const groups = [...this._config.groups];
+            const elements = [...groups[this._editingGroupIndex].elements];
+            elements[this._editingElementIndex] = this._editingElement;
+            groups[this._editingGroupIndex] = {
+                ...groups[this._editingGroupIndex],
+                elements
+            };
 
             this._config = {
                 ...this._config,
-                elements,
+                groups,
             };
 
             this._configChanged();
@@ -251,7 +296,53 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
         this._configChanged();
     }
 
-    private _addElement(): void {
+    private _addGroup(): void {
+        const newGroup = {
+            group_name: "New Group",
+            elements: []
+        };
+
+        this._config = {
+            ...this._config,
+            groups: [...this._config.groups, newGroup],
+        };
+
+        this._configChanged();
+    }
+
+    private _removeGroup(groupIndex: number): void {
+        const groups = [...this._config.groups];
+        groups.splice(groupIndex, 1);
+
+        this._config = {
+            ...this._config,
+            groups,
+        };
+
+        this._configChanged();
+    }
+
+    private _removeGroupClick(ev: any, groupIndex: number): void {
+        ev.stopPropagation(); // Prevent expansion panel from toggling
+        this._removeGroup(groupIndex);
+    }
+
+    private _groupNameChanged(ev: any, groupIndex: number): void {
+        const groups = [...this._config.groups];
+        groups[groupIndex] = {
+            ...groups[groupIndex],
+            group_name: ev.target.value
+        };
+
+        this._config = {
+            ...this._config,
+            groups,
+        };
+
+        this._configChanged();
+    }
+
+    private _addElementToGroup(groupIndex: number): void {
         const newElement = {
             type: "icon",
             icon: "mdi:home",
@@ -260,21 +351,34 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
             style: {}
         };
 
+        const groups = [...this._config.groups];
+        const elements = [...(groups[groupIndex].elements || [])];
+        elements.push(newElement);
+        groups[groupIndex] = {
+            ...groups[groupIndex],
+            elements
+        };
+
         this._config = {
             ...this._config,
-            elements: [...this._config.elements, newElement],
+            groups,
         };
 
         this._configChanged();
     }
 
-    private _removeElement(index: number): void {
-        const elements = [...this._config.elements];
-        elements.splice(index, 1);
+    private _removeElement(groupIndex: number, elementIndex: number): void {
+        const groups = [...this._config.groups];
+        const elements = [...groups[groupIndex].elements];
+        elements.splice(elementIndex, 1);
+        groups[groupIndex] = {
+            ...groups[groupIndex],
+            elements
+        };
 
         this._config = {
             ...this._config,
-            elements,
+            groups,
         };
 
         this._configChanged();
@@ -326,6 +430,82 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
         .add-element {
             --mdc-icon-button-size: 40px;
             --mdc-icon-size: 20px;
+        }
+
+        .groups-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .group-container {
+            border: 1px solid var(--divider-color);
+            border-radius: 8px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .group-header-content {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            width: 100%;
+            padding: 8px 0;
+        }
+
+        .group-header-content ha-textfield {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .group-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .element-count {
+            font-size: 14px;
+            color: var(--secondary-text-color);
+            white-space: nowrap;
+        }
+
+        .group-content {
+            padding: 16px;
+            padding-top: 0;
+        }
+
+        .group-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: var(--secondary-background-color);
+            border-bottom: 1px solid var(--divider-color);
+        }
+
+        .group-header ha-textfield {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .group-elements {
+            padding: 16px;
+        }
+
+        .elements-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--secondary-text-color);
+        }
+
+        .add-element-small {
+            --mdc-icon-button-size: 32px;
+            --mdc-icon-size: 16px;
         }
 
         .elements-list {

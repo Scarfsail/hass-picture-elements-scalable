@@ -6,7 +6,7 @@ import type { Lovelace, LovelaceCard, LovelaceCardEditor } from "../../hass-fron
 import type { LovelaceCardConfig } from "../../hass-frontend/src/data/lovelace/config/card";
 
 export interface PictureElementsScalableConfig extends LovelaceCardConfig {
-    elements: PictureElement[];
+    groups: PictureElementGroup[];
     image: string;
     style?: any
     image_width: number;
@@ -15,6 +15,12 @@ export interface PictureElementsScalableConfig extends LovelaceCardConfig {
     min_scale?: number;
     card_size?: number;
 }
+
+interface PictureElementGroup {
+    group_name: string;
+    elements: PictureElement[];
+}
+
 interface PictureElement {
     type: string;
     style: any;
@@ -145,11 +151,15 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
             `
   */  }
     createPictureCardElement(config: PictureElementsScalableConfig) {
+        // Flatten all groups into a single elements array
+        const allElements = config.groups?.reduce((acc, group) => {
+            return acc.concat(group.elements || []);
+        }, [] as PictureElement[]) || [];
 
         const cardConfig = {
             type: "picture-elements",
             image: config.image,
-            elements: config.elements.map(el => {
+            elements: allElements.map(el => {
                 const style = {...el.style};
                 style.transform = "none";
                 if (el.left!==undefined)
@@ -214,7 +224,11 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
             image: "/local/path/to/image.png",
             image_width: 1360,
             image_height: 849,
-            elements: [               
+            groups: [
+                {
+                    group_name: "Living Room",
+                    elements: []
+                }
             ]
         };
     }
