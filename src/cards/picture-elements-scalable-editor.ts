@@ -3,7 +3,6 @@ import { customElement, property, state } from "lit/decorators.js";
 import type { HomeAssistant } from "../../hass-frontend/src/types";
 import type { LovelaceCardEditor } from "../../hass-frontend/src/panels/lovelace/types";
 import type { PictureElementsScalableConfig } from "./picture-elements-scalable";
-import { dump, load } from "js-yaml";
 
 
 @customElement("picture-elements-scalable-editor")
@@ -18,10 +17,6 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
         if (!this._config.elements) {
             this._config.elements = [];
         }
-    }
-
-    get _type(): string {
-        return this._config?.type || "custom:picture-elements-scalable";
     }
 
     get _image(): string {
@@ -237,21 +232,6 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
         }
     }
 
-    private _saveElement(): void {
-        if (this._editingIndex === null || !this._editingElement) return;
-
-        const elements = [...this._config.elements];
-        elements[this._editingIndex] = this._editingElement;
-
-        this._config = {
-            ...this._config,
-            elements,
-        };
-
-        this._configChanged();
-        this._cancelEdit();
-    }
-
     private _valueChanged(ev:any): void {
         if (!this._config || !this.hass) {
             return;
@@ -298,44 +278,6 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
         };
 
         this._configChanged();
-    }
-
-    private _getDefaultElement(): any {
-        return {
-            type: "icon",
-            icon: "mdi:home",
-            left: 100,
-            top: 100
-        };
-    }
-
-    private _elementToYaml(element: any): string {
-        // This method is no longer needed for the dialog, but keep for display purposes
-        try {
-            return dump(element, { indent: 2 }).trim();
-        } catch (e) {
-            return JSON.stringify(element, null, 2);
-        }
-    }
-
-    private _elementYamlChanged(ev:any, index: number): void {
-        const yamlValue = ev.target.value;
-        
-        try {
-            const parsedElement = load(yamlValue);
-            const elements = [...this._config.elements];
-            elements[index] = parsedElement as any;
-
-            this._config = {
-                ...this._config,
-                elements,
-            };
-
-            this._configChanged();
-        } catch (e) {
-            // Invalid YAML, don't update config
-            console.warn("Invalid YAML in element", index, e);
-        }
     }
 
     private _configChanged(): void {
