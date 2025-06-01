@@ -16,7 +16,13 @@ export default defineConfig(({ mode }) => {
             outDir: './dist',
             assetsDir: "compiled",
             sourcemap: !isProduction, // Enable source maps in development mode
-            minify: isProduction // Minify only in production mode
+            minify: isProduction, // Minify only in production mode
+            rollupOptions: {
+                output: {
+                    inlineDynamicImports: true,
+                    manualChunks: undefined
+                }
+            }
         },
         /*
         esbuild: {
