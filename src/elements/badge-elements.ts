@@ -21,7 +21,10 @@ export class BadgeElements extends ElementBase<BadgeElementsConfig> {
         if (!this.badges) {
             this.badges = this._config!.entities.map(entity => {
                 const element = document.createElement('hui-entity-badge') as any
-                element.setConfig({ entity: entity, show_name: true });
+                element.setConfig({
+                    entity: entity, 
+                    show_name: true,
+                    show_entity_picture: true});
                 return {
                     "entity": entity,
                     "element": element
