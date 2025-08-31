@@ -262,13 +262,13 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
         const parts = [];
         
         if (element.entity) {
-            parts.push(`Entity: ${element.entity}`);
+            parts.push(`${element.entity}`);
         }
         if (element.icon) {
-            parts.push(`Icon: ${element.icon}`);
+            parts.push(`⛶ ${element.icon}`);
         }
         if (element.left !== undefined && element.top !== undefined) {
-            parts.push(`Position: ${element.left}, ${element.top}`);
+            parts.push(`⚲ ${element.left}, ${element.top}`);
         }
         
         return parts.join(' • ') || 'No additional info';
