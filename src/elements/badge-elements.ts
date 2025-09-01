@@ -6,6 +6,8 @@ import { keyed } from 'lit/directives/keyed.js';
 
 interface BadgeElementsConfig extends ElementBaseConfig {
     entities: string[];
+    show_name: boolean;
+    show_entity_picture: boolean;
 
 }
 interface Badge {
@@ -23,8 +25,8 @@ export class BadgeElements extends ElementBase<BadgeElementsConfig> {
                 const element = document.createElement('hui-entity-badge') as any
                 element.setConfig({
                     entity: entity, 
-                    show_name: true,
-                    show_entity_picture: true});
+                    show_name: this._config!.show_name,
+                    show_entity_picture: this._config!.show_entity_picture});
                 return {
                     "entity": entity,
                     "element": element
