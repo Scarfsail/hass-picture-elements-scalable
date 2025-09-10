@@ -15,7 +15,10 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
     @state() private _pendingAdd: { groupIndex: number; index: number; timestamp: number } | null = null;
 
     public setConfig(config: PictureElementsScalableConfig): void {
-        this._config = { ...config };
+        this._config = { 
+            ...config,
+            layers: config.layers || [], // Ensure backward compatibility
+        };
         if (!this._config.groups) {
             this._config.groups = [];
         }
@@ -109,6 +112,64 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
                     ></ha-textfield>
                 </div>
 
+                <!-- Layers Configuration -->
+                <div class="config-section">
+                    <div class="header">
+                        <div class="header-title">Layers</div>
+                        <ha-icon-button @click=${this._addLayer} class="add-element">
+                            <ha-icon icon="mdi:plus"></ha-icon>
+                        </ha-icon-button>
+                    </div>
+
+                    ${this._config.layers.length === 0 
+                        ? html`
+                            <div class="empty-state">
+                                <ha-icon icon="mdi:layers"></ha-icon>
+                                <div class="empty-state-text">No layers</div>
+                                <div class="empty-state-subtext">
+                                    Layers help organize groups by function (e.g., Lights, Security)
+                                </div>
+                            </div>
+                        `
+                        : html`
+                            <div class="layers-list">
+                                ${this._config.layers.map((layer, layerIndex) => html`
+                                    <div class="layer-row">
+                                        <ha-icon icon="${layer.icon || 'mdi:layer-group'}"></ha-icon>
+                                        <ha-textfield
+                                            label="Icon"
+                                            .value=${layer.icon}
+                                            @input=${(ev: any) => this._layerIconChanged(ev, layerIndex)}
+                                            placeholder="mdi:lightbulb"
+                                        ></ha-textfield>
+                                        <ha-textfield
+                                            label="Layer ID"
+                                            .value=${layer.id}
+                                            @input=${(ev: any) => this._layerIdChanged(ev, layerIndex)}
+                                            placeholder="e.g., lights"
+                                        ></ha-textfield>
+                                        <ha-textfield
+                                            label="Layer Name"
+                                            .value=${layer.name}
+                                            @input=${(ev: any) => this._layerNameChanged(ev, layerIndex)}
+                                            placeholder="e.g., Lights"
+                                        ></ha-textfield>
+                                        <ha-formfield label="">
+                                            <ha-switch
+                                                .checked=${layer.visible}
+                                                @change=${(ev: any) => this._layerVisibilityChanged(ev, layerIndex)}
+                                            ></ha-switch>
+                                        </ha-formfield>
+                                        <ha-icon-button @click=${() => this._removeLayer(layerIndex)}>
+                                            <ha-icon icon="mdi:delete"></ha-icon>
+                                        </ha-icon-button>
+                                    </div>
+                                `)}
+                            </div>
+                        `
+                    }
+                </div>
+
                 <!-- Groups Configuration -->
                 <div class="config-section">
                     <div class="header">
@@ -133,15 +194,31 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
                                 ${this._config.groups.map((group, groupIndex) => html`
                                     <ha-expansion-panel .expanded=${false}>
                                         <div slot="header" class="group-header-content">
-                                            <ha-textfield
-                                                label="Group Name"
-                                                .value=${group.group_name}
-                                                @input=${(ev: any) => this._groupNameChanged(ev, groupIndex)}
-                                                @click=${(ev: any) => ev.stopPropagation()}
-                                                placeholder="e.g., Living Room"
-                                            ></ha-textfield>
+                                            <div class="group-header-main">
+                                                <ha-textfield
+                                                    label="Group Name"
+                                                    .value=${group.group_name}
+                                                    @input=${(ev: any) => this._groupNameChanged(ev, groupIndex)}
+                                                    @click=${(ev: any) => ev.stopPropagation()}
+                                                    placeholder="e.g., Living Room"
+                                                ></ha-textfield>
+                                                <select
+                                                    class="layer-select"
+                                                    @change=${(ev: any) => this._groupLayerChanged(ev, groupIndex)}
+                                                    @click=${(ev: any) => ev.stopPropagation()}
+                                                >
+                                                    <option value="" ?selected=${!group.layer_id}>No Layer</option>
+                                                    ${this._config.layers.length === 0 ? 
+                                                        html`<option disabled>No layers created yet</option>` :
+                                                        this._config.layers.map(layer => html`
+                                                            <option value=${layer.id} ?selected=${group.layer_id === layer.id}>
+                                                                ${layer.name}
+                                                            </option>
+                                                        `)
+                                                    }
+                                                </select>
+                                            </div>
                                             <div class="group-header-actions">
-                                                <span class="element-count">${group.elements?.length || 0} elements</span>
                                                 <ha-icon-button @click=${(ev: any) => this._removeGroupClick(ev, groupIndex)}>
                                                     <ha-icon icon="mdi:delete"></ha-icon>
                                                 </ha-icon-button>
@@ -493,6 +570,139 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
         this.dispatchEvent(event);
     }
 
+    // Layer management methods
+    private _addLayer(): void {
+        const newLayer = {
+            id: "new_layer",
+            name: "New Layer",
+            icon: "mdi:layer-group",
+            visible: true
+        };
+
+        this._config = {
+            ...this._config,
+            layers: [...this._config.layers, newLayer],
+        };
+
+        this._configChanged();
+    }
+
+    private _removeLayer(layerIndex: number): void {
+        const layers = [...this._config.layers];
+        const removedLayerId = layers[layerIndex].id;
+        layers.splice(layerIndex, 1);
+
+        // Also remove layer assignments from groups
+        const groups = this._config.groups.map(group => ({
+            ...group,
+            layer_id: group.layer_id === removedLayerId ? undefined : group.layer_id
+        }));
+
+        this._config = {
+            ...this._config,
+            layers,
+            groups,
+        };
+
+        this._configChanged();
+    }
+
+    private _layerNameChanged(ev: any, layerIndex: number): void {
+        const layers = [...this._config.layers];
+        layers[layerIndex] = {
+            ...layers[layerIndex],
+            name: ev.target.value
+        };
+
+        this._config = {
+            ...this._config,
+            layers,
+        };
+
+        this._configChanged();
+    }
+
+    private _layerIdChanged(ev: any, layerIndex: number): void {
+        const layers = [...this._config.layers];
+        const oldId = layers[layerIndex].id;
+        const newId = ev.target.value;
+        
+        layers[layerIndex] = {
+            ...layers[layerIndex],
+            id: newId
+        };
+
+        // Update layer references in groups
+        const groups = this._config.groups.map(group => ({
+            ...group,
+            layer_id: group.layer_id === oldId ? newId : group.layer_id
+        }));
+
+        this._config = {
+            ...this._config,
+            layers,
+            groups,
+        };
+
+        this._configChanged();
+    }
+
+    private _layerIconChanged(ev: any, layerIndex: number): void {
+        const layers = [...this._config.layers];
+        layers[layerIndex] = {
+            ...layers[layerIndex],
+            icon: ev.target.value
+        };
+
+        this._config = {
+            ...this._config,
+            layers,
+        };
+
+        this._configChanged();
+    }
+
+    private _layerVisibilityChanged(ev: any, layerIndex: number): void {
+        const layers = [...this._config.layers];
+        layers[layerIndex] = {
+            ...layers[layerIndex],
+            visible: ev.target.checked
+        };
+
+        this._config = {
+            ...this._config,
+            layers,
+        };
+
+        this._configChanged();
+    }
+
+    // Group layer assignment methods
+    private _groupLayerChanged(ev: any, groupIndex: number): void {
+        const groups = [...this._config.groups];
+        groups[groupIndex] = {
+            ...groups[groupIndex],
+            layer_id: ev.target.value || undefined
+        };
+
+        this._config = {
+            ...this._config,
+            groups,
+        };
+
+        this._configChanged();
+    }
+
+    private _getLayerName(layerId: string): string {
+        const layer = this._config.layers.find(l => l.id === layerId);
+        return layer?.name || 'Unknown Layer';
+    }
+
+    private _getLayerIcon(layerId: string): string {
+        const layer = this._config.layers.find(l => l.id === layerId);
+        return layer?.icon || 'mdi:layer-group';
+    }
+
     static styles = css`
         .card-config {
             padding: 0;
@@ -538,6 +748,36 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
             gap: 16px;
         }
 
+        .layers-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .layer-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border: 1px solid var(--divider-color);
+            border-radius: 8px;
+            background: var(--card-background-color);
+        }
+
+        .layer-row ha-icon {
+            --mdc-icon-size: 20px;
+            color: var(--primary-color);
+        }
+
+        .layer-row ha-textfield {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .layer-row ha-formfield {
+            margin-left: auto;
+        }
+
         .group-container {
             border: 1px solid var(--divider-color);
             border-radius: 8px;
@@ -553,15 +793,59 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
             padding: 8px 0;
         }
 
+        .group-header-main {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex: 1;
+        }
+
         .group-header-content ha-textfield {
+            flex: 2;
+            margin-bottom: 0;
+        }
+
+        .group-header-content ha-select {
             flex: 1;
             margin-bottom: 0;
+        }
+
+        .group-header-content .layer-select {
+            flex: 1;
+            margin-bottom: 0;
+            padding: 8px;
+            border: 1px solid var(--divider-color);
+            border-radius: 4px;
+            background: var(--card-background-color);
+            color: var(--primary-text-color);
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        .layer-select:focus {
+            outline: 2px solid var(--primary-color);
+            border-color: var(--primary-color);
         }
 
         .group-header-actions {
             display: flex;
             align-items: center;
             gap: 12px;
+        }
+
+        .layer-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: var(--secondary-text-color);
+            background: var(--secondary-background-color);
+            padding: 4px 8px;
+            border-radius: 12px;
+        }
+
+        .layer-indicator ha-icon {
+            --mdc-icon-size: 14px;
         }
 
         .element-count {

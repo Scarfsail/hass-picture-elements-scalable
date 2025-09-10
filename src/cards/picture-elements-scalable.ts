@@ -5,8 +5,16 @@ import type { HomeAssistant } from "../../hass-frontend/src/types";
 import type { Lovelace, LovelaceCard, LovelaceCardEditor } from "../../hass-frontend/src/panels/lovelace/types";
 import type { LovelaceCardConfig } from "../../hass-frontend/src/data/lovelace/config/card";
 
+export interface Layer {
+    id: string;
+    name: string;
+    icon: string;
+    visible: boolean;
+}
+
 export interface PictureElementsScalableConfig extends LovelaceCardConfig {
     groups: PictureElementGroup[];
+    layers: Layer[];
     image: string;
     style?: any
     image_width: number;
@@ -18,6 +26,7 @@ export interface PictureElementsScalableConfig extends LovelaceCardConfig {
 
 interface PictureElementGroup {
     group_name: string;
+    layer_id?: string;
     elements: PictureElement[];
 }
 
@@ -41,9 +50,9 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
 
     private config?: PictureElementsScalableConfig;
 
-
     //@property({ attribute: false }) public hass?: HomeAssistant;
     @state() private _createCardElement: CreateCardElement = null;
+    @state() private _layerVisibility: Map<string, boolean> = new Map();
 
     @property({ attribute: false }) hass?: HomeAssistant;
 
@@ -58,9 +67,21 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
     }
 
     async setConfig(config: PictureElementsScalableConfig) {
-        this.config = config;
+        this.config = {
+            ...config,
+            layers: config.layers || [], // Ensure backward compatibility
+        };
         this._createCardElement = await getCreateCardElement();
+        
+        // Initialize layer visibility state
+        this._initializeLayerVisibility();
+    }
 
+    private _initializeLayerVisibility() {
+        this._layerVisibility.clear();
+        this.config?.layers?.forEach(layer => {
+            this._layerVisibility.set(layer.id, layer.visible);
+        });
     }
 
     public getLayoutOptions() {
@@ -117,10 +138,17 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
         }
         this.style.setProperty("position", "relative");
 
+        // Set CSS variables for layer visibility
+        this.config?.layers?.forEach(layer => {
+            const isVisible = this._layerVisibility.get(layer.id) ?? true;
+            this.style.setProperty(`--layer-${layer.id}-display`, isVisible ? 'block' : 'none');
+        });
+
         this.card = this.card || this.createPictureCardElement(this.config);
 
-        if (this.card)
+        if (this.card) {
             this.card.hass = this.hass;
+        }
 
         if (visibleHeight == 0)
             return html`
@@ -151,32 +179,61 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
             `
   */  }
     createPictureCardElement(config: PictureElementsScalableConfig) {
-        // Flatten all groups into a single elements array
-        const allElements = config.groups?.reduce((acc, group) => {
-            return acc.concat(group.elements || []);
-        }, [] as PictureElement[]) || [];
+        // Include ALL groups, don't filter by layer visibility anymore
+        const allGroups = config.groups || [];
+
+        // Flatten all groups into a single elements array with layer info
+        const allElements = allGroups.reduce((acc, group) => {
+            const groupElements = (group.elements || []).map(el => ({
+                ...el,
+                _layerId: group.layer_id // Track which layer this element belongs to
+            }));
+            return acc.concat(groupElements);
+        }, [] as (PictureElement & { _layerId?: string })[]) || [];
+
+        // Process elements and add CSS variables for layer visibility
+        const processedElements = allElements.map(el => {
+            const style = {...el.style};
+            style.transform = "none";
+            if (el.left!==undefined)
+                style.left = typeof el.left === "string" ? el.left : `${el.left}px`;
+            if (el.top!==undefined)
+                style.top = typeof el.top === "string" ? el.top : `${el.top}px`;
+            if (el.right!==undefined)
+                style.right = typeof el.right === "string" ? el.right : `${el.right}px`;
+            if (el.bottom!==undefined)
+                style.bottom = typeof el.bottom === "string" ? el.bottom : `${el.bottom}px`;
+            if (el.height!==undefined)
+                style.height = typeof el.height === "string" ? el.height : `${el.height}px`;
+            if (el.width!==undefined)
+                style.width = typeof el.width === "string" ? el.width : `${el.width}px`;    
+            
+            // Add layer visibility CSS variable
+            if (el._layerId) {
+                // Element belongs to a layer, use CSS variable for visibility
+                style.display = `var(--layer-${el._layerId}-display, block)`;
+            }
+            // Elements without layer assignment remain always visible (backward compatibility)
+            
+            // If this is a layers element, pass the layers configuration
+            if (el.type === "custom:picture-elements-scalable-layers") {
+                return {
+                    ...el, 
+                    style: style,
+                    layers: config.layers || [],
+                    _layerVisibility: this._layerVisibility
+                };
+            }
+            
+            // Remove the _layerId from the final element (it was just for processing)
+            const { _layerId, ...finalElement } = el;
+            return {...finalElement, style: style}
+        });
 
         const cardConfig = {
             type: "picture-elements",
             image: config.image,
-            elements: allElements.map(el => {
-                const style = {...el.style};
-                style.transform = "none";
-                if (el.left!==undefined)
-                    style.left = typeof el.left === "string" ? el.left : `${el.left}px`;
-                if (el.top!==undefined)
-                    style.top = typeof el.top === "string" ? el.top : `${el.top}px`;
-                if (el.right!==undefined)
-                    style.right = typeof el.right === "string" ? el.right : `${el.right}px`;
-                if (el.bottom!==undefined)
-                    style.bottom = typeof el.bottom === "string" ? el.bottom : `${el.bottom}px`;
-                if (el.height!==undefined)
-                    style.height = typeof el.height === "string" ? el.height : `${el.height}px`;
-                if (el.width!==undefined)
-                    style.width = typeof el.width === "string" ? el.width : `${el.width}px`;    
-                
-                return {...el, style: style}
-            }),
+            elements: processedElements,
             style: config.style
         };
 
@@ -188,12 +245,46 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
         if (element)
             this.resizeObserver.observe(element);
         console.log("Connected");
+
+        // Listen for layer visibility change events
+        this.addEventListener('layer-visibility-changed', this._handleLayerVisibilityChange as EventListener);
     }
 
     disconnectedCallback() {
         this.resizeObserver.disconnect();
         super.disconnectedCallback();
         console.log("Disconnected");
+
+        // Remove layer visibility change event listener
+        this.removeEventListener('layer-visibility-changed', this._handleLayerVisibilityChange as EventListener);
+    }
+
+    private _handleLayerVisibilityChange(event: Event) {
+        const customEvent = event as CustomEvent;
+        const { layerId, visible } = customEvent.detail;
+        this.toggleLayerVisibility(layerId, visible);
+    }
+
+    public toggleLayerVisibility(layerId: string, visible?: boolean) {
+        const currentVisibility = this._layerVisibility.get(layerId) ?? true;
+        const newVisibility = visible !== undefined ? visible : !currentVisibility;
+        
+        this._layerVisibility.set(layerId, newVisibility);
+        
+        // Update CSS variable immediately for smooth visibility toggle
+        this.style.setProperty(`--layer-${layerId}-display`, newVisibility ? 'block' : 'none');
+        
+        // Dispatch event to notify other components
+        const event = new CustomEvent('layer-visibility-updated', {
+            detail: { layerId, visible: newVisibility },
+            bubbles: true,
+            composed: true
+        });
+        this.dispatchEvent(event);
+    }
+
+    public getLayerVisibility(layerId: string): boolean {
+        return this._layerVisibility.get(layerId) ?? true;
     }
 
     onResize() {
@@ -224,6 +315,7 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
             image: "/local/path/to/image.png",
             image_width: 1360,
             image_height: 849,
+            layers: [],
             groups: [
                 {
                     group_name: "Living Room",
