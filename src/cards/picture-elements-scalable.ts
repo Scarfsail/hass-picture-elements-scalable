@@ -6,14 +6,19 @@ import type { Lovelace, LovelaceCard, LovelaceCardEditor } from "../../hass-fron
 import type { LovelaceCardConfig } from "../../hass-frontend/src/data/lovelace/config/card";
 
 export interface Layer {
-    id: string;
     name: string;
     icon: string;
     visible: boolean;
+    showInToggles: boolean;
+    groups: PictureElementGroup[];
+}
+
+export interface PictureElementGroup {
+    group_name: string;
+    elements: PictureElement[];
 }
 
 export interface PictureElementsScalableConfig extends LovelaceCardConfig {
-    groups: PictureElementGroup[];
     layers: Layer[];
     image: string;
     style?: any
@@ -22,12 +27,6 @@ export interface PictureElementsScalableConfig extends LovelaceCardConfig {
     max_scale?: number;
     min_scale?: number;
     card_size?: number;
-}
-
-interface PictureElementGroup {
-    group_name: string;
-    layer_id?: string;
-    elements: PictureElement[];
 }
 
 interface PictureElement {
@@ -52,7 +51,7 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
 
     //@property({ attribute: false }) public hass?: HomeAssistant;
     @state() private _createCardElement: CreateCardElement = null;
-    @state() private _layerVisibility: Map<string, boolean> = new Map();
+    @state() private _layerVisibility: Map<number, boolean> = new Map();
 
     @property({ attribute: false }) hass?: HomeAssistant;
 
@@ -79,8 +78,8 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
 
     private _initializeLayerVisibility() {
         this._layerVisibility.clear();
-        this.config?.layers?.forEach(layer => {
-            this._layerVisibility.set(layer.id, layer.visible);
+        this.config?.layers?.forEach((layer, index) => {
+            this._layerVisibility.set(index, layer.visible);
         });
     }
 
@@ -139,9 +138,9 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
         this.style.setProperty("position", "relative");
 
         // Set CSS variables for layer visibility
-        this.config?.layers?.forEach(layer => {
-            const isVisible = this._layerVisibility.get(layer.id) ?? true;
-            this.style.setProperty(`--layer-${layer.id}-display`, isVisible ? 'block' : 'none');
+        this.config?.layers?.forEach((layer, index) => {
+            const isVisible = this._layerVisibility.get(index) ?? true;
+            this.style.setProperty(`--layer-${index}-display`, isVisible ? 'block' : 'none');
         });
 
         this.card = this.card || this.createPictureCardElement(this.config);
@@ -179,20 +178,20 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
             `
   */  }
     createPictureCardElement(config: PictureElementsScalableConfig) {
-        // Include ALL groups, don't filter by layer visibility anymore
-        const allGroups = config.groups || [];
-
-        // Flatten all groups into a single elements array with layer info
-        const allElements = allGroups.reduce((acc, group) => {
-            const groupElements = (group.elements || []).map(el => ({
-                ...el,
-                _layerId: group.layer_id // Track which layer this element belongs to
-            }));
-            return acc.concat(groupElements);
-        }, [] as (PictureElement & { _layerId?: string })[]) || [];
+        // Flatten all layers and groups into a single elements array with layer info
+        const allElements = (config.layers || []).reduce((acc: (PictureElement & { _layerIndex?: number })[], layer: Layer, layerIndex: number) => {
+            const layerElements = (layer.groups || []).reduce((groupAcc: (PictureElement & { _layerIndex?: number })[], group: PictureElementGroup) => {
+                const groupElements = (group.elements || []).map((el: PictureElement) => ({
+                    ...el,
+                    _layerIndex: layerIndex // Track which layer this element belongs to
+                }));
+                return groupAcc.concat(groupElements);
+            }, []);
+            return acc.concat(layerElements);
+        }, []);
 
         // Process elements and add CSS variables for layer visibility
-        const processedElements = allElements.map(el => {
+        const processedElements = allElements.map((el: PictureElement & { _layerIndex?: number }) => {
             const style = {...el.style};
             style.transform = "none";
             if (el.left!==undefined)
@@ -209,9 +208,9 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
                 style.width = typeof el.width === "string" ? el.width : `${el.width}px`;    
             
             // Add layer visibility CSS variable
-            if (el._layerId) {
+            if (el._layerIndex !== undefined) {
                 // Element belongs to a layer, use CSS variable for visibility
-                style.display = `var(--layer-${el._layerId}-display, block)`;
+                style.display = `var(--layer-${el._layerIndex}-display, block)`;
             }
             // Elements without layer assignment remain always visible (backward compatibility)
             
@@ -225,8 +224,8 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
                 };
             }
             
-            // Remove the _layerId from the final element (it was just for processing)
-            const { _layerId, ...finalElement } = el;
+            // Remove the _layerIndex from the final element (it was just for processing)
+            const { _layerIndex, ...finalElement } = el;
             return {...finalElement, style: style}
         });
 
@@ -261,30 +260,30 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
 
     private _handleLayerVisibilityChange(event: Event) {
         const customEvent = event as CustomEvent;
-        const { layerId, visible } = customEvent.detail;
-        this.toggleLayerVisibility(layerId, visible);
+        const { layerIndex, visible } = customEvent.detail;
+        this.toggleLayerVisibility(layerIndex, visible);
     }
 
-    public toggleLayerVisibility(layerId: string, visible?: boolean) {
-        const currentVisibility = this._layerVisibility.get(layerId) ?? true;
+    public toggleLayerVisibility(layerIndex: number, visible?: boolean) {
+        const currentVisibility = this._layerVisibility.get(layerIndex) ?? true;
         const newVisibility = visible !== undefined ? visible : !currentVisibility;
         
-        this._layerVisibility.set(layerId, newVisibility);
+        this._layerVisibility.set(layerIndex, newVisibility);
         
         // Update CSS variable immediately for smooth visibility toggle
-        this.style.setProperty(`--layer-${layerId}-display`, newVisibility ? 'block' : 'none');
+        this.style.setProperty(`--layer-${layerIndex}-display`, newVisibility ? 'block' : 'none');
         
         // Dispatch event to notify other components
         const event = new CustomEvent('layer-visibility-updated', {
-            detail: { layerId, visible: newVisibility },
+            detail: { layerIndex, visible: newVisibility },
             bubbles: true,
             composed: true
         });
         this.dispatchEvent(event);
     }
 
-    public getLayerVisibility(layerId: string): boolean {
-        return this._layerVisibility.get(layerId) ?? true;
+    public getLayerVisibility(layerIndex: number): boolean {
+        return this._layerVisibility.get(layerIndex) ?? true;
     }
 
     onResize() {
@@ -315,11 +314,18 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
             image: "/local/path/to/image.png",
             image_width: 1360,
             image_height: 849,
-            layers: [],
-            groups: [
+            layers: [
                 {
-                    group_name: "Living Room",
-                    elements: []
+                    name: "Default Layer",
+                    icon: "mdi:layer-group",
+                    visible: true,
+                    showInToggles: true,
+                    groups: [
+                        {
+                            group_name: "Living Room",
+                            elements: []
+                        }
+                    ]
                 }
             ]
         };

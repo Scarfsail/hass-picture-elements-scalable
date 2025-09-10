@@ -5,13 +5,13 @@ import type { Layer } from "../cards/picture-elements-scalable";
 
 interface PictureElementsScalableLayersConfig extends ElementBaseConfig {
     layers?: Layer[];
-    _layerVisibility?: Map<string, boolean>;
+    _layerVisibility?: Map<number, boolean>;
 }
 
 @customElement("picture-elements-scalable-layers")
 export class PictureElementsScalableLayersElement extends ElementBase<PictureElementsScalableLayersConfig> {
     @property({ attribute: false }) layers: Layer[] = [];
-    @property({ attribute: false }) _layerVisibility: Map<string, boolean> = new Map();
+    @property({ attribute: false }) _layerVisibility: Map<number, boolean> = new Map();
 
     async setConfig(config: PictureElementsScalableLayersConfig): Promise<void> {
         await super.setConfig(config);
@@ -100,14 +100,14 @@ export class PictureElementsScalableLayersElement extends ElementBase<PictureEle
         super.disconnectedCallback();
     }
 
-    private _toggleLayer(layerId: string) {
+    private _toggleLayer(layerIndex: number) {
         // Toggle visibility in our local map
-        const currentVisibility = this._layerVisibility.get(layerId) ?? true;
-        this._layerVisibility.set(layerId, !currentVisibility);
+        const currentVisibility = this._layerVisibility.get(layerIndex) ?? true;
+        this._layerVisibility.set(layerIndex, !currentVisibility);
         
         // Dispatch event to parent card to update its state
         const event = new CustomEvent('layer-visibility-changed', {
-            detail: { layerId, visible: !currentVisibility },
+            detail: { layerIndex, visible: !currentVisibility },
             bubbles: true,
             composed: true
         });
@@ -117,28 +117,31 @@ export class PictureElementsScalableLayersElement extends ElementBase<PictureEle
         this.requestUpdate();
     }
 
-    private _getLayerVisibility(layerId: string): boolean {
-        return this._layerVisibility.get(layerId) ?? true;
+    private _getLayerVisibility(layerIndex: number): boolean {
+        return this._layerVisibility.get(layerIndex) ?? true;
     }
 
     protected override renderContent() {
-        if (!this.layers || this.layers.length === 0) {
+        // Filter layers to only show those with showInToggles: true
+        const toggleableLayers = this.layers?.filter(layer => layer.showInToggles) || [];
+
+        if (toggleableLayers.length === 0) {
             return html`
                 <div class="empty-state">
                     <ha-icon icon="mdi:layers"></ha-icon>
-                    <div>No layers configured</div>
+                    <div>No toggleable layers configured</div>
                 </div>
             `;
         }
 
         return html`
             <div class="layers-control">
-                ${this.layers.map(layer => {
-                    const isVisible = this._getLayerVisibility(layer.id);
+                ${toggleableLayers.map((layer, index) => {
+                    const isVisible = this._getLayerVisibility(index);
                     return html`
                         <button
                             class="layer-button ${isVisible ? 'active' : 'inactive'}"
-                            @click=${() => this._toggleLayer(layer.id)}
+                            @click=${() => this._toggleLayer(index)}
                             type="button"
                         >
                             <ha-icon icon="${layer.icon}" class="layer-icon"></ha-icon>

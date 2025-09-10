@@ -1,0 +1,273 @@
+import { css } from "lit-element";
+
+export const sharedStyles = css`
+    /* Section Styles */
+    .config-section {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 8px;
+        margin-top: 16px;
+        border-bottom: 2px solid var(--divider-color);
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .section-title ha-icon {
+        --mdc-icon-size: 20px;
+        color: var(--primary-color);
+    }
+
+    /* Button Styles */
+    .add-button {
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 20px;
+        padding: 8px 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+    .add-button:hover {
+        background: var(--primary-color);
+        opacity: 0.9;
+        transform: translateY(-1px);
+    }
+
+    .add-button ha-icon {
+        --mdc-icon-size: 16px;
+    }
+
+    .icon-button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 50%;
+        transition: background 0.2s ease;
+    }
+
+    .icon-button:hover {
+        background: var(--secondary-background-color);
+    }
+
+    .icon-button.danger:hover {
+        background: var(--error-color);
+        color: white;
+    }
+
+    .icon-button ha-icon {
+        --mdc-icon-size: 16px;
+    }
+
+    /* Item Styles (for layers, groups, elements) */
+    .item {
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        background: var(--secondary-background-color);
+        margin-bottom: 12px;
+        overflow: hidden;
+        transition: all 0.2s ease;
+    }
+
+    .item:hover {
+        border-color: var(--primary-color);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .item-header {
+        display: flex;
+        align-items: center;
+        padding: 16px;
+        cursor: pointer;
+        user-select: none;
+        background: var(--card-background-color);
+    }
+
+    .item-header:hover {
+        background: var(--secondary-background-color);
+    }
+
+    .expand-icon {
+        --mdc-icon-size: 20px;
+        margin-right: 12px;
+        transition: transform 0.2s ease;
+        color: var(--secondary-text-color);
+    }
+
+    .expand-icon.expanded {
+        transform: rotate(90deg);
+    }
+
+    .item-info {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .item-icon {
+        --mdc-icon-size: 18px;
+        color: var(--primary-color);
+    }
+
+    .item-name {
+        font-weight: 500;
+        color: var(--primary-text-color);
+    }
+
+    .item-details {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 12px;
+        color: var(--secondary-text-color);
+    }
+
+    .item-badge {
+        background: var(--primary-color);
+        color: white;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 10px;
+        font-weight: 500;
+    }
+
+    .item-badge.inactive {
+        background: var(--disabled-color);
+    }
+
+    .item-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .item-content {
+        padding: 16px;
+        border-top: 1px solid var(--divider-color);
+        background: var(--card-background-color);
+        display: none;
+    }
+
+    .item-content.expanded {
+        display: block;
+    }
+
+    /* Form Styles */
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .form-grid ha-textfield {
+        width: 100%;
+    }
+
+    .form-toggles {
+        grid-column: 1 / -1;
+        display: flex;
+        gap: 16px;
+    }
+
+    /* Empty State Styles */
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--secondary-text-color);
+    }
+
+    .empty-state ha-icon {
+        --mdc-icon-size: 48px;
+        margin-bottom: 16px;
+        opacity: 0.5;
+    }
+
+    .empty-state-title {
+        font-size: 16px;
+        font-weight: 500;
+        margin-bottom: 8px;
+    }
+
+    .empty-state-subtitle {
+        font-size: 14px;
+        opacity: 0.8;
+    }
+
+    /* Placeholder Styles */
+    .placeholder {
+        margin-top: 16px;
+        padding: 16px;
+        background: var(--secondary-background-color);
+        border-radius: 4px;
+        text-align: center;
+        color: var(--secondary-text-color);
+        font-style: italic;
+    }
+
+    /* Drag & Drop Styles */
+    .handle {
+        cursor: grab;
+        opacity: 0.6;
+        transition: opacity 0.2s ease;
+        margin-left: 8px;
+        color: var(--secondary-text-color);
+    }
+
+    .handle:hover {
+        opacity: 1;
+        color: var(--primary-text-color);
+    }
+
+    .handle:active {
+        cursor: grabbing;
+    }
+
+    .sortable-item {
+        position: relative;
+        transition: transform 0.2s ease;
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .sortable-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .sortable-ghost {
+        opacity: 0.5;
+        background: var(--primary-color);
+        border-radius: 8px;
+    }
+
+    .sortable-chosen .handle {
+        cursor: grabbing;
+        color: var(--primary-color);
+    }
+
+    .sortable-drag {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        transform: rotate(2deg);
+    }
+`;
