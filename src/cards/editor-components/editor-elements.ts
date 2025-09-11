@@ -4,6 +4,7 @@ import { sharedStyles } from "./shared-styles";
 import { DragDropMixin } from "./drag-drop-mixin";
 import type { HomeAssistant } from "../../../hass-frontend/src/types";
 import "./editor-element";
+import { CrossContainerCoordinator } from "./cross-container-coordinator";
 
 interface PictureElement {
     type: string;
@@ -23,6 +24,10 @@ export class EditorElements extends LitElement {
     @property({ attribute: false }) hass!: HomeAssistant;
     @property({ type: Array }) elements: PictureElement[] = [];
     @property({ attribute: false }) expandedElements: Set<number> = new Set();
+    @property({ type: Number }) layerIndex?: number;
+    @property({ type: Number }) groupIndex?: number;
+
+    private coordinator = CrossContainerCoordinator.getInstance();
 
     static styles = [
         sharedStyles,
@@ -47,33 +52,33 @@ export class EditorElements extends LitElement {
                     </button>
                 </div>
 
-                ${this.elements.length === 0 
-                    ? this._renderEmptyState()
-                    : html`
-                        <ha-sortable 
-                            handle-selector=".handle"
-                            draggable-selector=".element-item"
-                            @item-moved=${(ev: any) => this._handleElementsReorder(ev)}
-                            group="elements"
-                            .disabled=${false}
-                        >
-                            <div class="elements-list">
-                                ${this.elements.map((element, index) => html`
-                                    <editor-element
-                                        class="element-item"
-                                        .hass=${this.hass}
-                                        .element=${element as PictureElement}
-                                        .index=${index}
-                                        .isExpanded=${this.expandedElements.has(index)}
-                                        @element-toggle=${this._handleElementToggle}
-                                        @element-update=${this._handleElementUpdate}
-                                        @element-remove=${this._handleElementRemove}
-                                    ></editor-element>
-                                `)}
-                            </div>
-                        </ha-sortable>
-                    `
-                }
+                <ha-sortable 
+                    handle-selector=".handle"
+                    draggable-selector=".element-item"
+                    @item-moved=${(ev: any) => this._handleElementsReorder(ev)}
+                    @item-added=${(ev: any) => this._handleElementAdded(ev)}
+                    @item-removed=${(ev: any) => this._handleElementRemoved(ev)}
+                    group="all-elements"
+                    .disabled=${false}
+                >
+                    <div class="elements-list">
+                        ${this.elements.length === 0 
+                            ? html`<div class="empty-drop-zone">${this._renderEmptyState()}</div>`
+                            : this.elements.map((element, index) => html`
+                                <editor-element
+                                    class="element-item"
+                                    .hass=${this.hass}
+                                    .element=${element as PictureElement}
+                                    .index=${index}
+                                    .isExpanded=${this.expandedElements.has(index)}
+                                    @element-toggle=${this._handleElementToggle}
+                                    @element-update=${this._handleElementUpdate}
+                                    @element-remove=${this._handleElementRemove}
+                                ></editor-element>
+                            `)
+                        }
+                    </div>
+                </ha-sortable>
             </div>
         `;
     }
@@ -136,5 +141,55 @@ export class EditorElements extends LitElement {
             composed: true
         });
         this.dispatchEvent(event);
+    }
+
+    private _handleElementAdded(e: CustomEvent) {
+        // Record the add for cross-container coordination
+        this.coordinator.recordAdd('element', {
+            layerIndex: this.layerIndex,
+            groupIndex: this.groupIndex,
+            elementIndex: e.detail.index
+        });
+
+        // Also bubble up the event for parent components
+        const event = new CustomEvent('element-added', {
+            detail: { 
+                index: e.detail.index,
+                layerIndex: this.layerIndex,
+                groupIndex: this.groupIndex,
+                timestamp: Date.now()
+            },
+            bubbles: true,
+            composed: true
+        });
+        this.dispatchEvent(event);
+    }
+
+    private _handleElementRemoved(e: CustomEvent) {
+        const removedIndex = e.detail.index;
+        const removedElement = this.elements[removedIndex];
+        
+        // Check if this is a cross-container move
+        const isCrossContainerMove = this.coordinator.recordRemove('element', {
+            layerIndex: this.layerIndex,
+            groupIndex: this.groupIndex,
+            elementIndex: removedIndex
+        }, removedElement);
+
+        if (!isCrossContainerMove) {
+            // Normal removal - bubble up the event
+            const event = new CustomEvent('element-removed', {
+                detail: { 
+                    index: removedIndex,
+                    layerIndex: this.layerIndex,
+                    groupIndex: this.groupIndex,
+                    timestamp: Date.now()
+                },
+                bubbles: true,
+                composed: true
+            });
+            this.dispatchEvent(event);
+        }
+        // If it was a cross-container move, the coordinator handles it
     }
 }

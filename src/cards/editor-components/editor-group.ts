@@ -10,6 +10,7 @@ export class EditorGroup extends LitElement {
     @property({ attribute: false }) hass!: HomeAssistant;
     @property({ type: Object }) group!: PictureElementGroup;
     @property({ type: Number }) index!: number;
+    @property({ type: Number }) layerIndex?: number;
     @property({ type: Boolean }) isExpanded: boolean = false;
     @state() private _expandedElements: Set<number> = new Set();
 
@@ -63,11 +64,15 @@ export class EditorGroup extends LitElement {
                         .hass=${this.hass}
                         .elements=${this.group.elements || []}
                         .expandedElements=${this._expandedElements}
+                        .layerIndex=${this.layerIndex}
+                        .groupIndex=${this.index}
                         @elements-add=${this._addElement}
                         @elements-toggle=${this._toggleElement}
                         @elements-update=${this._updateElement}
                         @elements-remove=${this._removeElement}
                         @elements-reorder=${this._reorderElements}
+                        @element-added=${this._handleElementAdded}
+                        @element-removed=${this._handleElementRemoved}
                     ></editor-elements>
                 </div>
             </div>
@@ -213,5 +218,24 @@ export class EditorGroup extends LitElement {
             composed: true
         });
         this.dispatchEvent(event);
+    }
+
+    // Cross-container drag & drop handlers for elements
+    private _handleElementAdded(ev: CustomEvent): void {
+        // Bubble up the element-added event for cross-group coordination
+        this.dispatchEvent(new CustomEvent('element-added', {
+            detail: ev.detail,
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    private _handleElementRemoved(ev: CustomEvent): void {
+        // Bubble up the element-removed event for cross-group coordination
+        this.dispatchEvent(new CustomEvent('element-removed', {
+            detail: ev.detail,
+            bubbles: true,
+            composed: true
+        }));
     }
 }

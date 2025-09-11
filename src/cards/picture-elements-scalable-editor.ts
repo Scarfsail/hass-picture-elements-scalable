@@ -5,12 +5,22 @@ import type { LovelaceCardEditor } from "../../hass-frontend/src/panels/lovelace
 import type { PictureElementsScalableConfig, Layer } from "./picture-elements-scalable";
 import { sharedStyles } from "./editor-components/shared-styles";
 import "./editor-components/editor-layers";
+import { CrossContainerCoordinator } from "./editor-components/cross-container-coordinator";
 
 @customElement("picture-elements-scalable-editor")
 export class PictureElementsScalableEditor extends LitElement implements LovelaceCardEditor {
     @property({ attribute: false }) public hass!: HomeAssistant;
     @state() private _config!: PictureElementsScalableConfig;
     @state() private _expandedLayers: Set<number> = new Set();
+    @state() private _pendingAdd: { 
+        type: 'element' | 'group';
+        layerIndex?: number; 
+        groupIndex?: number; 
+        index: number; 
+        timestamp: number;
+    } | null = null;
+
+    private coordinator = CrossContainerCoordinator.getInstance();
 
     static styles = [
         sharedStyles,
@@ -52,6 +62,11 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
                 layers: config.layers || []
             };
         }
+
+        // Set up cross-container coordination callback
+        this.coordinator.setConfigUpdateCallback((moveInfo: any) => {
+            this._handleCrossContainerMove(moveInfo);
+        });
     }
 
     protected render() {
@@ -108,6 +123,10 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
                     @layers-update=${this._updateLayer}
                     @layers-remove=${this._removeLayer}
                     @layers-reorder=${this._reorderLayers}
+                    @group-added=${this._handleGroupAdded}
+                    @group-removed=${this._handleGroupRemoved}
+                    @element-added=${this._handleElementAdded}
+                    @element-removed=${this._handleElementRemoved}
                 ></editor-layers>
             </div>
         `;
@@ -222,5 +241,162 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
             composed: true,
         });
         this.dispatchEvent(event);
+    }
+
+    // Cross-container drag & drop handlers
+    private _handleGroupAdded(ev: CustomEvent): void {
+        // Store the added group info for cross-container moves
+        this._pendingAdd = {
+            type: 'group',
+            index: ev.detail.index,
+            timestamp: ev.detail.timestamp
+        };
+    }
+
+    private _handleGroupRemoved(ev: CustomEvent): void {
+        const removedIndex = ev.detail.index;
+        
+        // Check if we have a pending add (cross-container move)
+        if (this._pendingAdd && 
+            this._pendingAdd.type === 'group' && 
+            (Date.now() - this._pendingAdd.timestamp) < 100) {
+            
+            // This is a cross-layer group move
+            // We need to find which layer the group was removed from and which layer it was added to
+            // For now, just clear the pending add - the actual move logic will be handled in the nested components
+            this._pendingAdd = null;
+        }
+    }
+
+    private _handleElementAdded(ev: CustomEvent): void {
+        // Store the added element info for cross-container moves
+        this._pendingAdd = {
+            type: 'element',
+            index: ev.detail.index,
+            timestamp: ev.detail.timestamp
+        };
+    }
+
+    private _handleElementRemoved(ev: CustomEvent): void {
+        // For now, just clear the pending add
+        // The actual cross-container logic will be implemented at the component level
+        if (this._pendingAdd && 
+            this._pendingAdd.type === 'element' && 
+            (Date.now() - this._pendingAdd.timestamp) < 100) {
+            this._pendingAdd = null;
+        }
+    }
+
+    private _handleCrossContainerMove(moveInfo: any): void {
+        if (moveInfo.type === 'cross-container-element-move') {
+            this._performCrossContainerElementMove(moveInfo);
+        } else if (moveInfo.type === 'cross-container-group-move') {
+            this._performCrossContainerGroupMove(moveInfo);
+        }
+    }
+
+    private _performCrossContainerElementMove(moveInfo: any): void {
+        const { sourceInfo, targetInfo, element } = moveInfo;
+
+        // Create a completely new config structure to avoid any reference issues
+        const layers = JSON.parse(JSON.stringify(this._config.layers));
+        
+        try {
+            // Ensure source layer and group exist
+            if (!layers[sourceInfo.layerIndex] || 
+                !layers[sourceInfo.layerIndex].groups[sourceInfo.groupIndex]) {
+                console.error('Source layer/group not found:', sourceInfo);
+                return;
+            }
+
+            // Ensure target layer and group exist
+            if (!layers[targetInfo.layerIndex] || 
+                !layers[targetInfo.layerIndex].groups[targetInfo.groupIndex]) {
+                console.error('Target layer/group not found:', targetInfo);
+                return;
+            }
+
+            // Initialize elements arrays if they don't exist
+            if (!layers[sourceInfo.layerIndex].groups[sourceInfo.groupIndex].elements) {
+                layers[sourceInfo.layerIndex].groups[sourceInfo.groupIndex].elements = [];
+            }
+            if (!layers[targetInfo.layerIndex].groups[targetInfo.groupIndex].elements) {
+                layers[targetInfo.layerIndex].groups[targetInfo.groupIndex].elements = [];
+            }
+
+            const sourceElements = layers[sourceInfo.layerIndex].groups[sourceInfo.groupIndex].elements;
+            const targetElements = layers[targetInfo.layerIndex].groups[targetInfo.groupIndex].elements;
+
+            // Remove element from source (find by content match, not index)
+            const sourceIndex = sourceElements.findIndex((el: any) => 
+                JSON.stringify(el) === JSON.stringify(element)
+            );
+            
+            if (sourceIndex >= 0) {
+                sourceElements.splice(sourceIndex, 1);
+            }
+
+            // Add element to target
+            const insertIndex = Math.min(targetInfo.elementIndex, targetElements.length);
+            targetElements.splice(insertIndex, 0, element);
+
+            // Update the config
+            this._config = { ...this._config, layers };
+            this._configChanged();
+            
+        } catch (error) {
+            console.error('Error during cross-container move:', error);
+        }
+    }
+
+    private _performCrossContainerGroupMove(moveInfo: any): void {
+        const { sourceInfo, targetInfo, group } = moveInfo;
+
+        // Create a completely new config structure to avoid any reference issues
+        const layers = JSON.parse(JSON.stringify(this._config.layers));
+        
+        try {
+            // Ensure source and target layers exist
+            if (!layers[sourceInfo.layerIndex]) {
+                console.error('Source layer not found:', sourceInfo.layerIndex);
+                return;
+            }
+
+            if (!layers[targetInfo.layerIndex]) {
+                console.error('Target layer not found:', targetInfo.layerIndex);
+                return;
+            }
+
+            // Initialize groups arrays if they don't exist
+            if (!layers[sourceInfo.layerIndex].groups) {
+                layers[sourceInfo.layerIndex].groups = [];
+            }
+            if (!layers[targetInfo.layerIndex].groups) {
+                layers[targetInfo.layerIndex].groups = [];
+            }
+
+            const sourceGroups = layers[sourceInfo.layerIndex].groups;
+            const targetGroups = layers[targetInfo.layerIndex].groups;
+
+            // Remove group from source (find by content match, not index)
+            const sourceIndex = sourceGroups.findIndex((g: any) => 
+                JSON.stringify(g) === JSON.stringify(group)
+            );
+            
+            if (sourceIndex >= 0) {
+                sourceGroups.splice(sourceIndex, 1);
+            }
+
+            // Add group to target
+            const insertIndex = Math.min(targetInfo.groupIndex, targetGroups.length);
+            targetGroups.splice(insertIndex, 0, group);
+
+            // Update the config
+            this._config = { ...this._config, layers };
+            this._configChanged();
+            
+        } catch (error) {
+            console.error('Error during cross-container group move:', error);
+        }
     }
 }

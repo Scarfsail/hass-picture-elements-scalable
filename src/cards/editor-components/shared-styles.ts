@@ -213,6 +213,50 @@ export const sharedStyles = css`
         opacity: 0.8;
     }
 
+    /* Empty Drop Zone Styles */
+    .empty-drop-zone {
+        min-height: 100px;
+        border: 2px dashed var(--divider-color);
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+
+    .empty-drop-zone:hover {
+        border-color: var(--primary-color);
+        background: var(--primary-color-fade, rgba(33, 150, 243, 0.05));
+    }
+
+    /* Show visual feedback when dragging over empty drop zone */
+    ha-sortable.dragover .empty-drop-zone {
+        border-color: var(--primary-color);
+        background: var(--primary-color-fade, rgba(33, 150, 243, 0.1));
+        border-style: solid;
+    }
+
+    ha-sortable .empty-drop-zone {
+        margin: 8px 0;
+    }
+
+    /* Make empty drop zones more prominent */
+    .empty-drop-zone::before {
+        content: "Drop here";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: var(--secondary-text-color);
+        font-size: 12px;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        pointer-events: none;
+    }
+
+    .empty-drop-zone:hover::before,
+    ha-sortable.dragover .empty-drop-zone::before {
+        opacity: 0.7;
+    }
+
     /* Placeholder Styles */
     .placeholder {
         margin-top: 16px;

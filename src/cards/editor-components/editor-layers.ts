@@ -42,6 +42,8 @@ export class EditorLayers extends LitElement {
                             handle-selector=".handle"
                             draggable-selector=".layer-item"
                             @item-moved=${(ev: any) => this._handleLayersReorder(ev)}
+                            @item-added=${(ev: any) => this._handleLayerAdded(ev)}
+                            @item-removed=${(ev: any) => this._handleLayerRemoved(ev)}
                             group="layers"
                             .disabled=${false}
                         >
@@ -120,6 +122,32 @@ export class EditorLayers extends LitElement {
         
         const event = new CustomEvent('layers-reorder', {
             detail: { layers: reorderedLayers },
+            bubbles: true,
+            composed: true
+        });
+        this.dispatchEvent(event);
+    }
+
+    private _handleLayerAdded(e: CustomEvent) {
+        // Store the added layer info for cross-container moves
+        const event = new CustomEvent('layer-added', {
+            detail: { 
+                index: e.detail.index,
+                timestamp: Date.now()
+            },
+            bubbles: true,
+            composed: true
+        });
+        this.dispatchEvent(event);
+    }
+
+    private _handleLayerRemoved(e: CustomEvent) {
+        // Handle layer removal for cross-container moves  
+        const event = new CustomEvent('layer-removed', {
+            detail: { 
+                index: e.detail.index,
+                timestamp: Date.now()
+            },
             bubbles: true,
             composed: true
         });

@@ -87,11 +87,16 @@ export class EditorLayer extends LitElement {
                         .hass=${this.hass}
                         .groups=${this.layer.groups || []}
                         .expandedGroups=${this._expandedGroups}
+                        .layerIndex=${this.index}
                         @groups-add=${this._addGroup}
                         @groups-toggle=${this._toggleGroup}
                         @groups-update=${this._updateGroup}
                         @groups-remove=${this._removeGroup}
                         @groups-reorder=${this._reorderGroups}
+                        @group-added=${this._handleGroupAdded}
+                        @group-removed=${this._handleGroupRemoved}
+                        @element-added=${this._handleElementAdded}
+                        @element-removed=${this._handleElementRemoved}
                     ></editor-groups>
                 </div>
             </div>
@@ -228,5 +233,42 @@ export class EditorLayer extends LitElement {
             composed: true
         });
         this.dispatchEvent(event);
+    }
+
+    // Cross-container drag & drop handlers
+    private _handleGroupAdded(ev: CustomEvent): void {
+        // Bubble up the group-added event for cross-layer coordination
+        this.dispatchEvent(new CustomEvent('group-added', {
+            detail: ev.detail,
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    private _handleGroupRemoved(ev: CustomEvent): void {
+        // Bubble up the group-removed event for cross-layer coordination
+        this.dispatchEvent(new CustomEvent('group-removed', {
+            detail: ev.detail,
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    private _handleElementAdded(ev: CustomEvent): void {
+        // Bubble up the element-added event for cross-group coordination
+        this.dispatchEvent(new CustomEvent('element-added', {
+            detail: ev.detail,
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    private _handleElementRemoved(ev: CustomEvent): void {
+        // Bubble up the element-removed event for cross-group coordination
+        this.dispatchEvent(new CustomEvent('element-removed', {
+            detail: ev.detail,
+            bubbles: true,
+            composed: true
+        }));
     }
 }
