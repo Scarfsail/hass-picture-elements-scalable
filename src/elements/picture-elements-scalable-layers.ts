@@ -136,12 +136,14 @@ export class PictureElementsScalableLayersElement extends ElementBase<PictureEle
 
         return html`
             <div class="layers-control">
-                ${toggleableLayers.map((layer, index) => {
-                    const isVisible = this._getLayerVisibility(index);
+                ${toggleableLayers.map((layer, filteredIndex) => {
+                    // Find the original layer index in the full layers array
+                    const originalLayerIndex = this.layers.findIndex(l => l === layer);
+                    const isVisible = this._getLayerVisibility(originalLayerIndex);
                     return html`
                         <button
                             class="layer-button ${isVisible ? 'active' : 'inactive'}"
-                            @click=${() => this._toggleLayer(index)}
+                            @click=${() => this._toggleLayer(originalLayerIndex)}
                             type="button"
                         >
                             <ha-icon icon="${layer.icon}" class="layer-icon"></ha-icon>
