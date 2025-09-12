@@ -34,6 +34,11 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
             .basic-config ha-textfield {
                 width: 100%;
             }
+
+            /* Make persistence ID field span full width for better UX */
+            .basic-config ha-textfield[label="Layer State Persistence ID"] {
+                grid-column: 1 / -1;
+            }
         `
     ];
 
@@ -109,6 +114,13 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
                             step="0.1"
                             .value=${this._config.max_scale || 3}
                             @input=${this._maxScaleChanged}
+                        ></ha-textfield>
+                        <ha-textfield
+                            label="Layer State Persistence ID"
+                            .value=${this._config.layers_visibility_persistence_id || ""}
+                            @input=${this._persistenceIdChanged}
+                            placeholder="default (leave empty to share state)"
+                            helper-text="Unique ID for layer visibility state. Same ID = shared state across cards."
                         ></ha-textfield>
                     </div>
                 </div>
@@ -231,6 +243,18 @@ export class PictureElementsScalableEditor extends LitElement implements Lovelac
 
     private _maxScaleChanged(ev: any): void {
         this._config = { ...this._config, max_scale: parseFloat(ev.target.value) || 3 };
+        this._configChanged();
+    }
+
+    private _persistenceIdChanged(ev: any): void {
+        const value = ev.target.value.trim();
+        if (value === '') {
+            // Remove the property when empty (use default)
+            const { layers_visibility_persistence_id, ...configWithoutId } = this._config;
+            this._config = configWithoutId;
+        } else {
+            this._config = { ...this._config, layers_visibility_persistence_id: value };
+        }
         this._configChanged();
     }
 

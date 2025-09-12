@@ -4,6 +4,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import type { HomeAssistant } from "../../hass-frontend/src/types";
 import type { Lovelace, LovelaceCard, LovelaceCardEditor } from "../../hass-frontend/src/panels/lovelace/types";
 import type { LovelaceCardConfig } from "../../hass-frontend/src/data/lovelace/config/card";
+import { LayerStateManager } from "../utils/layer-state-storage";
 
 export interface Layer {
     name: string;
@@ -27,6 +28,7 @@ export interface PictureElementsScalableConfig extends LovelaceCardConfig {
     max_scale?: number;
     min_scale?: number;
     card_size?: number;
+    layers_visibility_persistence_id?: string;
 }
 
 interface PictureElement {
@@ -48,6 +50,7 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
     private resizeObserver: ResizeObserver;
 
     private config?: PictureElementsScalableConfig;
+    private layerStateManager?: LayerStateManager;
 
     //@property({ attribute: false }) public hass?: HomeAssistant;
     @state() private _createCardElement: CreateCardElement = null;
@@ -72,14 +75,30 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
         };
         this._createCardElement = await getCreateCardElement();
         
-        // Initialize layer visibility state
+        // Initialize layer state manager with persistence ID
+        const persistenceId = LayerStateManager.generatePersistenceId(config);
+        this.layerStateManager = new LayerStateManager(persistenceId);
+        
+        // Initialize layer visibility state with persistence
         this._initializeLayerVisibility();
     }
 
     private _initializeLayerVisibility() {
         this._layerVisibility.clear();
+        
+        // Load persisted layer state from localStorage
+        const persistedState = this.layerStateManager?.loadLayerState() || {};
+        
         this.config?.layers?.forEach((layer, index) => {
-            this._layerVisibility.set(index, layer.visible);
+            // Use persisted state if available, otherwise fall back to layer config default
+            const visibility = persistedState.hasOwnProperty(index) 
+                ? persistedState[index] 
+                : LayerStateManager.getDefaultVisibility(layer);
+            
+            this._layerVisibility.set(index, visibility);
+            
+            // Set CSS variable immediately for proper initial display
+            this.style.setProperty(`--layer-${index}-display`, visibility ? 'block' : 'none');
         });
     }
 
@@ -243,7 +262,6 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
         const element = document.querySelector("home-assistant")?.shadowRoot?.querySelector("home-assistant-main")?.shadowRoot?.querySelector("partial-panel-resolver")?.querySelector("ha-panel-lovelace")?.shadowRoot?.querySelector("hui-root")?.shadowRoot?.querySelector("div");
         if (element)
             this.resizeObserver.observe(element);
-        console.log("Connected");
 
         // Listen for layer visibility change events
         this.addEventListener('layer-visibility-changed', this._handleLayerVisibilityChange as EventListener);
@@ -252,7 +270,6 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
     disconnectedCallback() {
         this.resizeObserver.disconnect();
         super.disconnectedCallback();
-        console.log("Disconnected");
 
         // Remove layer visibility change event listener
         this.removeEventListener('layer-visibility-changed', this._handleLayerVisibilityChange as EventListener);
@@ -270,6 +287,9 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
         
         this._layerVisibility.set(layerIndex, newVisibility);
         
+        // Persist the change to localStorage
+        this.layerStateManager?.updateLayerVisibility(layerIndex, newVisibility);
+        
         // Update CSS variable immediately for smooth visibility toggle
         this.style.setProperty(`--layer-${layerIndex}-display`, newVisibility ? 'block' : 'none');
         
@@ -284,6 +304,16 @@ export class PictureElementsScalable extends LitElement implements LovelaceCard 
 
     public getLayerVisibility(layerIndex: number): boolean {
         return this._layerVisibility.get(layerIndex) ?? true;
+    }
+
+    /**
+     * Clear persisted layer state and reset to defaults
+     * Useful for debugging or reset functionality
+     */
+    public resetLayerState() {
+        this.layerStateManager?.clearLayerState();
+        this._initializeLayerVisibility();
+        this.requestUpdate();
     }
 
     onResize() {
