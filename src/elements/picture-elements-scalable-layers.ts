@@ -57,9 +57,9 @@ export class PictureElementsScalableLayersElement extends ElementBase<PictureEle
         }
 
         .layer-button.active {
-            background: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
+            background: color-mix(in srgb, var(--primary-color) 15%, var(--card-background-color));
+            color: var(--primary-color);
+            border-color: color-mix(in srgb, var(--primary-color) 30%, var(--divider-color));
         }
 
         .layer-button.inactive {
