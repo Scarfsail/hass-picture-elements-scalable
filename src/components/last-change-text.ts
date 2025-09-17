@@ -26,6 +26,7 @@ class LastChangeText extends LitElement {
             border-radius: 6px;
             font-size: 11px;
             text-align: center;
+            opacity: 0.6;
         }
   `;
 
