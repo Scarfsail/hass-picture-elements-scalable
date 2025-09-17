@@ -61,6 +61,7 @@ export class PictureElementsScalableLayersElement extends ElementBase<PictureEle
             color: var(--primary-color);
             border-color: color-mix(in srgb, var(--primary-color) 30%, var(--divider-color));
         }
+        
 
         .layer-button.inactive {
             background: var(--disabled-color);
