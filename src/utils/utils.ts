@@ -15,11 +15,11 @@ export class Utils {
         return minutes + ":" + (seconds > 9 ? seconds : "0" + seconds);
     }
 
-    public static formatDurationFromTo(dateTimeFrom: dayjs.ConfigType, dateTimeTo: dayjs.ConfigType = new Date()): string {
-        return this.formatDuration(dayjs.duration(dayjs(dateTimeTo).diff(dateTimeFrom)));
+    public static formatDurationFromTo(dateTimeFrom: dayjs.ConfigType, dateTimeTo?: dayjs.ConfigType, roundWhenOlderThanHours?: number): string {
+        return this.formatDuration(dayjs.duration(dayjs(dateTimeTo ?? new Date()).diff(dateTimeFrom)), roundWhenOlderThanHours);
     }
 
-    public static formatDuration(duration: duration.Duration): string {
+    public static formatDuration(duration: duration.Duration, roundWhenOlderThanHours?: number): string {
         const hours = duration.hours();
         const minutes = duration.minutes();
         const seconds = duration.seconds();
@@ -27,20 +27,26 @@ export class Utils {
         if (duration.asMonths() >= 1) {
             const weeks = duration.weeks();
             const months = Math.floor(duration.asMonths());
-            return `${months}m ${weeks}t`;
+            return `${months}m` + (roundWhenOlderThanHours ? '':` ${weeks}t`);
         }
 
         if (duration.asWeeks() >= 1) {
             const weeks = duration.weeks();
             const days = duration.days() - (weeks * 7);
-            return `${weeks}t ${days}d`;
+            return `${weeks}t` + (roundWhenOlderThanHours ? '':` ${days}d`);
         }
 
         if (duration.asDays() >= 1)
-            return `${duration.days()}d ${hours}h`;
+            return `${duration.days()}d`+ (roundWhenOlderThanHours ? '':` ${hours}h`);
 
-        if (duration.asHours() >= 1)
+        if (duration.asHours() >= 1) {
+            if (roundWhenOlderThanHours && duration.asHours() >= roundWhenOlderThanHours) {
+                // Round up if minutes >= 30, otherwise keep the current hour
+                const roundedHours = minutes >= 30 ? hours + 1 : hours;
+                return `${roundedHours}h`;
+            }
             return `${hours}h ${minutes}m`;
+        }
 
         if (duration.asMinutes() >= 5)
             return `${minutes}m`;

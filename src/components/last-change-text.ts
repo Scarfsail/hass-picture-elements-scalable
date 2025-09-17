@@ -81,7 +81,7 @@ class LastChangeText extends LitElement {
       <div style="color: ${textColor}; 
                   background-color: ${backgroundColor}; 
                   box-shadow: 0px 0px 7px 3px ${backgroundColor};">
-        ${Utils.formatDurationFromTo(lastChanged)}
+        ${Utils.formatDurationFromTo(lastChanged, undefined, 2)}
       </div>
     `;
   }
