@@ -28,6 +28,7 @@ export class PictureElementsScalableLayersElement extends ElementBase<PictureEle
     static styles = css`
         :host {
             display: block;
+            opacity:0.9;
         }
 
         .layers-control {
@@ -40,11 +41,11 @@ export class PictureElementsScalableLayersElement extends ElementBase<PictureEle
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 16px;
-            border-radius: 20px;
+            padding: 12px 3px;
+            border-radius: 15px;
             transition: all 0.2s ease;
             border: 2px solid var(--divider-color);
-            background: var(--card-background-color);
+            background: black;
             color: var(--primary-text-color);
             cursor: pointer;
             font-family: inherit;
@@ -57,22 +58,21 @@ export class PictureElementsScalableLayersElement extends ElementBase<PictureEle
         }
 
         .layer-button.active {
-            background: color-mix(in srgb, var(--primary-color) 15%, var(--card-background-color));
+            background: black;
             color: var(--primary-color);
             border-color: color-mix(in srgb, var(--primary-color) 30%, var(--divider-color));
         }
         
 
         .layer-button.inactive {
-            background: var(--disabled-color);
+            background: black;
             color: var(--disabled-text-color);
             border-color: var(--disabled-color);
             opacity: 0.6;
         }
 
         .layer-icon {
-            width: 18px;
-            height: 18px;
+            padding-left:7px
         }
 
         .layer-name {
