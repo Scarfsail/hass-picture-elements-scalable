@@ -4,10 +4,22 @@ import type { HomeAssistant } from "../../../hass-frontend/src/types";
 import type { HassEntity } from "home-assistant-js-websocket";
 import { evalJsTemplate, subscribeRenderTemplate } from "../../utils";
 
+export interface ActionConfig {
+    action: "more-info" | "toggle" | "call-service" | "perform-action" | "navigate" | "url" | "none";
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    perform_action?: string;
+    data?: Record<string, unknown>;
+    target?: any;
+    confirmation?: any;
+}
+
 export interface ElementBaseConfig {
     style: any;
     top: number;
     left: number;
+    tap_action?: ActionConfig;
 }
 
 

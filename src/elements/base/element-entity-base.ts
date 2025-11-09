@@ -2,6 +2,7 @@ import { LitElement, TemplateResult, css, html, nothing } from "lit"
 import { property, state } from "lit/decorators.js";
 import type { HomeAssistant } from "../../../hass-frontend/src/types";
 import type { HassEntity } from "home-assistant-js-websocket";
+import { handleAction } from "../../utils/handle-action";
 import { ElementBase, ElementBaseConfig } from "./element-base";
 
 export interface ElementEntityBaseConfig extends ElementBaseConfig {
@@ -24,11 +25,17 @@ export abstract class ElementEntityBase<TConfig extends ElementEntityBaseConfig 
         }
     }
 
+    private _handleTap(): void {
+        // If tap_action is defined, use it
+        if (this._config?.tap_action) {
+            handleAction(this, this.hass!, this._config!, "tap");
+        } else if (this.showMoreInfoOnClick) {
+            // Otherwise, fall back to the default showMoreInfo behavior if enabled
+            this._showMoreInfo();
+        }
+    }
 
     private _showMoreInfo() {
-        if (!this.showMoreInfoOnClick) 
-            return;
-
         const entityId = this._config?.entity;
         const event = new CustomEvent("hass-more-info", {
             detail: { entityId: entityId },
@@ -37,6 +44,7 @@ export abstract class ElementEntityBase<TConfig extends ElementEntityBaseConfig 
         });
         this.dispatchEvent(event);
     }
+
     protected showMoreInfoOnClick = true;
 
     protected override renderContent() {
@@ -55,7 +63,7 @@ export abstract class ElementEntityBase<TConfig extends ElementEntityBaseConfig 
         }
 
         return html`
-        <div @click=${this._showMoreInfo}>
+        <div @click=${this._handleTap}>
             ${this.renderEntityContent(entity)}
         </div>`
     }
