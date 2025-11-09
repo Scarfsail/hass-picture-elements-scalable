@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "lit": "3.3.1",
-    "dayjs": "1.11.18",
+    "dayjs": "1.11.19",
     "home-assistant-js-websocket": "9.5.0"
   },
   "devDependencies": {
@@ -18,7 +18,7 @@
     "typescript": "^5.7.2",
     "ts-lit-plugin": "2.0.2",
     "@semantic-release/git": "^10.0.1",
-    "semantic-release": "^24.0.0"
+    "semantic-release": "^25.0.2"
   },
   "release": {
     "branches": [
