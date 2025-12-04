@@ -9,6 +9,7 @@ interface DoorWindowElementConfig extends ElementEntityBaseConfig {
     width: number;
     height: number;
     orientation: "vertical" | "horizontal";
+    unobtrusive?: boolean;
 }
 
 
@@ -33,7 +34,17 @@ export class DoorWindowElement extends ElementEntityArmableBase<DoorWindowElemen
 
 
         const alarmState = this.getAlarmoSensorState();
-        const color = opened ? '#6464FF' : alarmState ? (alarmState.armed ? 'red' : 'green') : 'white'
+        const color = opened ? 
+            (this._config?.unobtrusive ?
+                'white'
+                :
+                '#6464FF'
+            ) 
+            : 
+            alarmState ? 
+                (alarmState.armed ? 'red' : 'green') 
+                : 
+                'gray';
 
         return html`
             <div style="display:flex; align-items:center; gap:5px; flex-direction:${this._config.orientation == 'horizontal' ? 'column' : 'row'}">
