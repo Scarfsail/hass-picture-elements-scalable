@@ -13,7 +13,8 @@ export class MotionSensorElement extends ElementEntityArmableBase {
 
 
         const alarmState = this.getAlarmoSensorState();
-        const color = alarmState ? (alarmState.armed ? 'red' : 'green') : 'white'
+        const color = entity?.state == "on" ? "ffc107" : (alarmState ? (alarmState.armed ? 'red' : 'green') : 'white')
+
 
         return html`
             <ha-icon style="color:${color}" icon="mdi:motion-sensor"></ha-icon>
